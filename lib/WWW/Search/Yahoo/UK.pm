@@ -1,6 +1,6 @@
 # UK.pm
 # by Martin Thurn
-# $Id: UK.pm,v 1.4 2003-11-04 09:26:43-05 kingpin Exp kingpin $
+# $Id: UK.pm,v 1.5 2003/12/30 04:19:57 Daddy Exp $
 
 =head1 NAME
 

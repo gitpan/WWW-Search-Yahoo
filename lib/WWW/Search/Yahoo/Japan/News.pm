@@ -1,4 +1,4 @@
-# $Id: News.pm,v 1.10 2003-07-29 08:58:10-04 kingpin Exp kingpin $
+# $Id: News.pm,v 1.11 2003/12/30 04:18:21 Daddy Exp $
 
 =head1 NAME
 

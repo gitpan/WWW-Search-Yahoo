@@ -2,11 +2,12 @@
 use inc::Module::Install;
 
 name('WWW-Search-Yahoo');
-version(2.37);
+version(2.38);
 
 author('Martin Thurn <mthurn@cpan.org>');
 license('perl');
 
+requires( perl => '5.004' );
 requires('Date::Manip');
 requires('HTML::TreeBuilder');
 # We need the version of WWW::Search that allows empty query string:
@@ -20,7 +21,7 @@ requires('WWW::Search::Test' => 2.26);
 
 # Test::More is needed for `make test`:
 include_deps('Test::More', 5.004);
-requires('Test::More');
+build_requires('Test::More');
 # Jcode is needed only for `make test` on Yahoo::Japan::News
 recommends('Jcode');
 

@@ -28,10 +28,8 @@ MULTI_TEST:
 $iDebug = 0;
 $iDump = 0;
 # This query usually returns TWO pages of results:
-&my_test('normal', 'fairly', 26, 49, $iDebug, $iDump);
+&my_test('normal', 'oddparents', 26, undef, $iDebug, $iDump);
 cmp_ok(26, '<=', $WWW::Search::Test::oSearch->approximate_hit_count,
-       'approximate_hit_count');
-cmp_ok($WWW::Search::Test::oSearch->approximate_hit_count, '<=', 49,
        'approximate_hit_count');
 ALL_DONE:
 exit 0;

@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 2.33 2003-09-20 15:49:47-04 kingpin Exp kingpin $
+# $Id: Yahoo.pm,v 2.34 2003/12/30 04:17:00 Daddy Exp $
 
 =head1 NAME
 
@@ -111,7 +111,7 @@ use strict;
 use vars qw( $VERSION $MAINTAINER @ISA );
 
 @ISA = qw( WWW::Search );
-$VERSION = sprintf("%d.%02d", q$Revision: 2.33 $ =~ /(\d+)\.(\d+)/o);
+$VERSION = sprintf("%d.%02d", q$Revision: 2.34 $ =~ /(\d+)\.(\d+)/o);
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub gui_query

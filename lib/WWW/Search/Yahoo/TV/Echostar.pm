@@ -1,4 +1,4 @@
-# $Id: Echostar.pm,v 1.7 2003-11-04 09:26:28-05 kingpin Exp kingpin $
+# $Id: Echostar.pm,v 1.9 2003/12/30 04:03:06 Daddy Exp $
 
 =head1 NAME
 
@@ -48,7 +48,7 @@ use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 
 @ISA = qw( WWW::Search );
-$VERSION = sprintf("%d.%02d", q$Revision: 1.7 $ =~ /(\d+)\.(\d+)/o);
+$VERSION = sprintf("%d.%02d", q$Revision: 1.9 $ =~ /(\d+)\.(\d+)/o);
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 use constant DEBUG_SETUP => 0;
@@ -146,7 +146,7 @@ sub preprocess_results_page_OFF
   {
   my $self = shift;
   my $sPage = shift;
-  print STDERR qq{=========$sPage=========} if (2 < $self->{_debug});
+  print STDERR qq{=========$sPage=========} if (2 <= $self->{_debug});
   return $sPage;
   } # preprocess_results_page
 
@@ -156,6 +156,7 @@ sub parse_tree
   my $self = shift;
   my $oTree = shift;
   my $iHits = 0;
+  my $today = &ParseDate('today');
   my @aoFONT = $oTree->look_down('_tag' => 'font');
  FONT_TAG:
   foreach my $oFONT (@aoFONT)
@@ -229,8 +230,25 @@ sub parse_tree
           print STDERR " +   episode==$sEpisode==\n" if (2 <= $self->{_debug});
           print STDERR " +   channel==$sChannel==\n" if (2 <= $self->{_debug});
           next SMALL_TAG if exists($self->{_ignore_channel}->{$sChannel});
-          print STDERR " +   datetime=$sDTG==\n" if (2 <= $self->{_debug});
+          print STDERR " +   raw    dtg=$sDTG==\n" if (2 <= $self->{_debug});
+          # Yahoo does not put the year on the dtg.  Without a year,
+          # Date::Manip defaults to the same year as today.
+          # Date::Manip barfs if the day-of-week does not agree with
+          # the rest of the date-string.  Therefore, we delete the
+          # day-of-week, and add an explicit year:
+          substr($sDTG, 0, 3) = '';
+          my $date = &ParseDate($sDTG);
+          print STDERR " +    date=$date==\n" if (2 <= $self->{_debug});
+          print STDERR " +   today=$today==\n" if (2 <= $self->{_debug});
+          if (&Date_Cmp($date, $today) < 0)
+            {
+            # Date of TV show is in the past; it must be that today is
+            # December and the whow is in January of next year!
+            $sDTG .= ' '. &UnixDate('next month', '%Y');
+            } # if
+          print STDERR " +   cooked dtg=$sDTG==\n" if (2 <= $self->{_debug});
           my $sDate = &UnixDate($sDTG, '%A, %b %E at %H:%M');
+          print STDERR " +   cooked date=$sDate==\n" if (2 <= $self->{_debug});
           my $sDesc = "$sDate on $sChannel";
           $sTitle .= qq{ ("$sEpisode")} if ($sEpisode ne '');
           my $oHit = new WWW::Search::Result;
@@ -270,14 +288,14 @@ will be the AND of the searches.  For example, the following search
 will never return anything:
 
   $oSearch->native_query('',
-                         {
-                         search => 'adv',
-                         title => 'football',
-                         subtit => 'Yankees',
-                         desc => 'Enterprise',
-                         contrib => 'Madonna',
-                         range => 1,
-                         },
+                           {
+                           search => 'adv',
+                           title => 'football',
+                           subtit => 'Yankees',
+                           desc => 'Enterprise',
+                           contrib => 'Madonna',
+                           range => 1,
+                           },
                          );
 
 =over

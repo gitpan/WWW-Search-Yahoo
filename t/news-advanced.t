@@ -29,8 +29,8 @@ DEBUG_NOW:
 TODO:
   {
   local $TODO = qq{yahoo.com advanced search is often broken.};
-  $WWW::Search::Test::oSearch->date_from('2003-10-21');
-  $WWW::Search::Test::oSearch->date_to  ('2003-10-30');
+  $WWW::Search::Test::oSearch->date_from('2003-12-21');
+  $WWW::Search::Test::oSearch->date_to  ('2003-12-30');
   $iDebug = 0;
   $iDump = 0;
   &my_test('normal', 'Aomori', 1, 9, $iDebug, $iDump);
