@@ -1,3 +1,13 @@
+2004-05-17  Kingpin  <mthurn@verizon.net>
+
+	* lib/WWW/Search/Yahoo/DE.pm: fix version number
+
+2004-05-14  Kingpin  <mthurn@verizon.net>
+
+	* lib/WWW/Search/Yahoo.pm (parse_tree): strip period out of numbers
+
+	* lib/WWW/Search/Yahoo/DE.pm (_string_has_count): add . to number pattern
+
 2004-05-13  Kingpin  <mthurn@verizon.net>
 
 	* lib/WWW/Search/Yahoo.pm (_string_has_count): new method

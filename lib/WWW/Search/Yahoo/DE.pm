@@ -69,7 +69,7 @@ use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
 
-$VERSION = do { my @r = (q$Revision $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 1.4 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub native_setup_search
@@ -92,7 +92,7 @@ sub _string_has_count
   {
   my $self = shift;
   my $s = shift;
-  return $1 if ($s =~ m!\bvon\s+(?:ca.\s+)?([,0-9]+)!i);
+  return $1 if ($s =~ m!\bvon\s+(?:ca\.\s+)?([,.0-9]+)!i);
   return -1;
   } # _string_has_count
 

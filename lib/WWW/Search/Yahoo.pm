@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 2.352 2004/03/13 14:31:48 Daddy Exp Daddy $
+# $Id: Yahoo.pm,v 2.355 2004/05/17 10:57:48 Daddy Exp $
 
 =head1 NAME
 
@@ -114,7 +114,7 @@ use vars qw( $VERSION $MAINTAINER @ISA );
 use vars qw( $iMustPause );
 
 @ISA = qw( WWW::Search );
-$VERSION = do { my @r = (q$Revision: 2.352 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.355 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 # Thanks to the hard work of Gil Vidals and his team at
@@ -262,10 +262,9 @@ sub parse_tree
       my $s = $oDIV->as_text;
       print STDERR " +   TEXT ==$s==\n" if (2 <= $self->{_debug});
       my $iCount = $self->_string_has_count($s);
-      $iCount =~ s!,!!g;
+      $iCount =~ tr!,\.!!d;
       if (0 <= $iCount)
         {
-        $iCount =~ s!,!!g;
         $self->approximate_result_count($iCount);
         last DIV_TAG;
         } # if
@@ -284,7 +283,7 @@ sub parse_tree
       my $s = $oDIV->as_text;
       print STDERR " +   TEXT ==$s==\n" if (2 <= $self->{_debug});
       my $iCount = $self->_string_has_count($s);
-      $iCount =~ s!,!!g;
+      $iCount =~ tr!,\.!!d;
       if (0 <= $iCount)
         {
         $self->approximate_result_count($iCount);
