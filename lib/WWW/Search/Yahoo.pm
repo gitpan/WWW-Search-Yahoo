@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Wm. L. Scheding and Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 1.43 2001/12/24 16:24:16 mthurn Exp $
+# $Id: Yahoo.pm,v 1.44 2002/03/28 16:09:21 mthurn Exp mthurn $
 
 =head1 NAME
 
@@ -162,7 +162,7 @@ package WWW::Search::Yahoo;
 # @EXPORT_OK = qw();
 @ISA = qw( WWW::Search ); # Exporter);
 
-$VERSION = '2.24';
+$VERSION = '2.25';
 $MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
 
 use Carp ();
@@ -259,6 +259,7 @@ sub parse_tree
   {
   my $self = shift;
   my $tree = shift;
+  print STDERR " + ::Yahoo got a tree $tree\n" if 2 <= $self->{_debug};
   my $hits_found = 0;
   # The hit count is inside a <FONT> tag:
   my @aoFONT = $tree->look_down('_tag', 'font');
@@ -325,6 +326,10 @@ sub parse_tree
     next LI if $sURL =~ m!^http://dir\.yahoo\.com!;
     # The text of the LI is the description:
     my $sDesc = $oLI->as_text;
+    # Chop off extraneous:
+    $sDesc =~ s!More Results From: .*?\Z!!i;
+    $sDesc =~ s!\s?\d+-\d+\sof\s\d+\s\240.*?\Z!!i;
+
     print STDERR " +   DESC  == $sDesc\n" if 2 <= $self->{_debug};
     my $hit = new WWW::SearchResult;
     $hit->add_url($sURL);
@@ -357,7 +362,6 @@ sub parse_tree
         } # if
       } # foreach $oA
     } # foreach $oTABLE
-  $tree->delete;
   return $hits_found;
   } # parse_tree
 
@@ -372,10 +376,10 @@ http://ink.yahoo.com/bin/query?p=sushi+restaurant+Columbus+Ohio&hc=0&hs=0
 Advanced search:
 http://ink.yahoo.com/bin/query?o=1&p=LSAm&d=y&za=or&h=c&g=0&n=20
 
-==== actual next link from page:
+actual next link from page:
 
 http://google.yahoo.com/bin/query?p=%22Shelagh+Fraser%22&b=21&hc=0&hs=0&xargs=
 
-==== _next_url :
+_next_url :
 
 http://google.yahoo.com/bin/query?%0Ap=%22Shelagh+Fraser%22&b=21&hc=0&hs=0&xargs=
