@@ -2,5 +2,7 @@ ChangeLog
 MANIFEST
 Makefile.PL
 README
-Yahoo.pm
+lib/WWW/Search/Yahoo.pm
+lib/WWW/Search/Yahoo/Korea.pm
+lib/WWW/Search/Yahoo/UK.pm
 test.pl

@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Wm. L. Scheding and Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 1.38 2000/12/15 14:13:04 mthurn Exp $
+# $Id: Yahoo.pm,v 1.39 2001/03/30 17:20:43 mthurn Exp mthurn $
 
 =head1 NAME
 
@@ -20,12 +20,6 @@ WWW::Search::Yahoo - class for searching Yahoo
 
 This class is a Yahoo specialization of L<WWW::Search>.  It handles
 making and interpreting Yahoo searches F<http://www.yahoo.com>.
-
-You can also search Yahoo Korea.  Just add this search_base_url to
-your search setup:
-
-  $oSearch->native_query($sQuery, 
-                         {'search_base_url' => 'http://search.yahoo.co.kr'});
 
 This class exports no public interface; all interaction should
 be done through L<WWW::Search> objects.
@@ -68,6 +62,10 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 =head1 VERSION HISTORY
 
 If it''s not listed here, then it wasn''t a meaningful nor released revision.
+
+=head2 2.22, 2001-03031
+
+added support for subclassing, for regional Yahoo sites
 
 =head2 2.21, 2000-12-15
 
@@ -151,15 +149,16 @@ Updated test cases.
 
 package WWW::Search::Yahoo;
 
-require Exporter;
-@EXPORT = qw();
-@EXPORT_OK = qw();
-@ISA = qw(WWW::Search Exporter);
+# require Exporter;
+# @EXPORT = qw();
+# @EXPORT_OK = qw();
+@ISA = qw( WWW::Search ); # Exporter);
 
-$VERSION = '2.21';
+$VERSION = '2.22';
 $MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
 
 use Carp ();
+use Data::Dumper;  # for debugging only
 use HTML::TreeBuilder;
 use WWW::Search qw( generic_option strip_tags );
 use WWW::SearchResult;
@@ -169,16 +168,19 @@ sub gui_query
   {
   # actual URL as of 2000-03-27 is
   # http://search.yahoo.com/bin/search?p=sushi+restaurant+Columbus+Ohio
-  my ($self, $sQuery, $rh) = @_;
-  $self->{'search_base_url'} = 'http://search.yahoo.com';
+  my ($self, $sQuery) = (shift, shift);
   $self->{'_options'} = {
-                         'search_url' => $self->{'search_base_url'} .'/bin/search',
                          'p' => $sQuery,
                          # 'hc' => 0,
                          # 'hs' => 0,
                         };
   # print STDERR " +   Yahoo::gui_query() is calling native_query()...\n";
-  return $self->native_query($sQuery, $rh);
+  return $self->native_query($sQuery,
+                               {
+                                'search_base_url' => 'http://search.yahoo.com',
+                                'search_base_path' => '/bin/search',
+                               },
+                             @_);
   } # gui_query
 
 
@@ -201,13 +203,13 @@ sub native_setup_search
   $self->{_next_to_retrieve} = 1;
   $self->{'_num_hits'} = 0;
 
+  $self->{'search_base_url'} ||= 'http://ink.yahoo.com';
+  $self->{'search_base_path'} ||= '/bin/query';
   if (! defined($self->{'_options'}))
     {
     # We do not clobber the existing _options hash, if there is one;
     # e.g. if gui_search() was already called on this object
-    $self->{'search_base_url'} ||= 'http://ink.yahoo.com';
     $self->{'_options'} = {
-                           'search_url' => $self->{'search_base_url'} .'/bin/query',
                            'o' => 1,
                            'p' => $native_query,
                            'd' => 'y',  # Yahoo's index, not usenet
@@ -219,19 +221,32 @@ sub native_setup_search
                           };
     } # if
   my $rhOptions = $self->{'_options'};
-  if (defined($rhOptsArg)) 
+  if (defined($rhOptsArg))
     {
-    # Copy in new options.
-    foreach my $key (keys %$rhOptsArg) 
+    # Copy in new options, promoting special ones:
+    foreach my $key (keys %$rhOptsArg)
       {
-      $rhOptions->{$key} = $rhOptsArg->{$key} if defined($rhOptsArg->{$key});
+      # print STDERR " +   inspecting option $key...";
+      if (WWW::Search::generic_option($key))
+        {
+        # print STDERR "promote & delete\n";
+        $self->{$key} = $rhOptsArg->{$key} if defined($rhOptsArg->{$key});
+        delete $rhOptsArg->{$key};
+        }
+      else
+        {
+        # print STDERR "copy\n";
+        $rhOptions->{$key} = $rhOptsArg->{$key} if defined($rhOptsArg->{$key});
+        }
       } # foreach
+    # print STDERR " + resulting rhOptions is ", Dumper($rhOptions);
+    # print STDERR " + resulting rhOptsArg is ", Dumper($rhOptsArg);
     } # if
   # Finally, figure out the url.
-  $self->{'_next_url'} = $self->{'_options'}{'search_url'} .'?'. $self->hash_to_cgi_string($rhOptions);
+  $self->{'_next_url'} = $self->{'search_base_url'} . $self->{'search_base_path'} .'?'. $self->hash_to_cgi_string($rhOptions);
 
-  $self->{_debug} = $rhOptions->{'search_debug'};
-  $self->{_debug} = 2 if ($rhOptions->{'search_parse_debug'});
+  $self->{_debug} = $self->{'search_debug'};
+  $self->{_debug} = 2 if ($self->{'search_parse_debug'});
   $self->{_debug} = 0 if (!defined($self->{_debug}));
   } # native_setup_search
 

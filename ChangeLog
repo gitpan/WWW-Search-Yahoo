@@ -1,3 +1,15 @@
+2001-03-31  Kingpin  <mthurn@tasc.com>
+	
+	* VERSION 2.22 RELEASED
+	
+2001-03-30  Kingpin  <mthurn@tasc.com>
+
+	* lib/WWW/Search/Yahoo.pm (native_setup_search): added support for subclassing
+
+	* lib/WWW/Search/Yahoo/UK.pm: new backend
+
+	* lib/WWW/Search/Yahoo/Korea.pm: new backend
+
 2000-12-16
 	
 	* VERSION 2.21 RELEASED
