@@ -261,9 +261,10 @@ sub parse_tree
       print STDERR " + try DIV ==", $oDIV->as_HTML if (2 <= $self->{_debug});
       my $s = $oDIV->as_text;
       print STDERR " +   TEXT ==$s==\n" if (2 <= $self->{_debug});
-      if ($s =~ m!out\s+of\s+(?:about\s+)?([,0-9]+)!i)
+      my $iCount = $self->_string_has_count($s);
+      $iCount =~ s!,!!g;
+      if (0 <= $iCount)
         {
-        my $iCount = $1;
         $iCount =~ s!,!!g;
         $self->approximate_result_count($iCount);
         last DIV_TAG;
@@ -282,10 +283,10 @@ sub parse_tree
       print STDERR " + try SMALL ==", $oDIV->as_HTML if (2 <= $self->{_debug});
       my $s = $oDIV->as_text;
       print STDERR " +   TEXT ==$s==\n" if (2 <= $self->{_debug});
-      if ($s =~ m!out\s+of\s+(?:about\s+)?([,0-9]+)!i)
+      my $iCount = $self->_string_has_count($s);
+      $iCount =~ s!,!!g;
+      if (0 <= $iCount)
         {
-        my $iCount = $1;
-        $iCount =~ s!,!!g;
         $self->approximate_result_count($iCount);
         last SMALL_TAG;
         } # if
@@ -305,9 +306,15 @@ sub parse_tree
     my $sTitle = $oA->as_text || '';
     my $sURL = $oA->attr('href') || '';
     next LI_TAG unless ($sURL ne '');
+    print STDERR " +   raw     URL is ==$sURL==\n" if (2 <= $self->{_debug});
+    # Throw out Yahoo category links that pop up on a failed query:
+    next LI_TAG if ($sURL =~ m!/search3/empty/catlink/!);
+    # Throw out Yahoo suggested further-search:
+    next LI_TAG if ($sURL =~ m!search.yahoo.com/search!);
     unshift @aoA, $oA;
     # Strip off the yahoo.com redirect part of the URL:
     $sURL =~ s!\A.*?\*-!!;
+    print STDERR " +   cooked  URL is ==$sURL==\n" if (2 <= $self->{_debug});
     # Delete the useless human-readable restatement of the URL (first
     # <EM> tag we come across):
     my $oEM = $oLI->look_down(_tag => 'em');
@@ -346,16 +353,9 @@ sub parse_tree
     next NEXT_A unless ref($oA);
     my $sAhtml = $oA->as_HTML;
     printf STDERR (" +   next A ==%s==\n", $sAhtml) if (2 <= $self->{_debug});
-    my $sURL = $oA->attr('href');
-    if (
-        ($oA->as_text eq 'Next')
-        ||
-        # I can not type Chinese, nor even cut-and-paste into Emacs
-        # with confidence that the encoding will not get screwed up,
-        # so I resort to this:
-        ($sAhtml =~ m!&Iuml;&Acirc;&Ograve;&raquo;&Ograve;&sup3;!i)
-       )
+    if ($self->_a_is_next_link($oA))
       {
+      my $sURL = $oA->attr('href');
       # Delete Yahoo-redirect portion of URL:
       $sURL =~ s!\A.+?\*?-?(?=http)!!;
       $self->{_next_url} = $self->absurl($self->{'_prev_url'}, $sURL);
@@ -365,6 +365,21 @@ sub parse_tree
   return $hits_found;
   } # parse_tree
 
+sub _string_has_count
+  {
+  my $self = shift;
+  my $s = shift;
+  return $1 if ($s =~ m!\bout\s+of\s+(?:about\s+)?([,0-9]+)!i);
+  return -1;
+  } # _string_has_count
+
+sub _a_is_next_link
+  {
+  my $self = shift;
+  my $oA = shift;
+  return 0 unless (ref $oA);
+  return ($oA->as_text eq 'Next');
+  } # _a_is_next_link
 
 sub strip
   {

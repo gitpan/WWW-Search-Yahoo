@@ -12,15 +12,16 @@ GUI_TEST:
 $iDebug = 0;
 &my_engine('Yahoo');
 # goto MULTI;
+diag("Sending 1-page query to yahoo.com...");
 # This GUI query returns 1 page of results:
-$iDebug = 1;
-&my_test('gui', '"Yendor'.'ian tales demo"', 1, 99, $iDebug);
+$iDebug = 0;
+&my_test('gui', '"Yendor'.'ian tales demo"', 1, 19, $iDebug);
 MULTI:
+diag("Sending multi-page query to yahoo.com...");
 $iDebug = 0;
 # This GUI query returns many pages of results; gui search returns 20
 # per page:
-&my_test('gui', 'pokemon', 35, undef, $iDebug);
-$iDebug = 0;
+&my_test('gui', 'pokemon', 21, undef, $iDebug);
 
 sub my_engine
   {

@@ -69,7 +69,7 @@ use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
 
-$VERSION = '1.00';
+$VERSION = do { my @r = (q$Revision $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub native_setup_search
@@ -79,12 +79,31 @@ sub native_setup_search
   $self->{'_options'} = {
                          'p' => $sQuery,
                          'y' => 'y',   # german sites only
+                         n => 100,
                         };
   $rh->{'search_base_url'} = 'http://de.search.yahoo.com';
   $rh->{'search_base_path'} = '/search/de';
   # print STDERR " +   Yahoo::DE::native_setup_search() is calling SUPER::native_setup_search()...\n";
   return $self->SUPER::native_setup_search($sQuery, $rh);
   } # native_setup_search
+
+
+sub _string_has_count
+  {
+  my $self = shift;
+  my $s = shift;
+  return $1 if ($s =~ m!\bvon\s+(?:ca.\s+)?([,0-9]+)!i);
+  return -1;
+  } # _string_has_count
+
+sub _a_is_next_link
+  {
+  my $self = shift;
+  my $oA = shift;
+  return 0 unless (ref $oA);
+  return ($oA->as_text eq 'Weitere');
+  } # _a_is_next_link
+
 
 1;
 

@@ -1,6 +1,6 @@
 # China.pm
 # by Martin Thurn
-# $Id: China.pm,v 2.1 2004/02/17 13:14:40 Daddy Exp $
+# $Id: China.pm,v 2.3 2004/05/13 21:26:23 Daddy Exp $
 
 =head1 NAME
 
@@ -62,7 +62,7 @@ use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
 
-$VERSION = do { my @r = (q$Revision: 2.1 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.3 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub native_setup_search
@@ -77,6 +77,28 @@ sub native_setup_search
   $rh->{'search_base_path'} = '/search/cn';
   return $self->SUPER::native_setup_search($sQuery, $rh);
   } # native_setup_search
+
+sub _string_has_count
+  {
+  my $self = shift;
+  my $s = shift;
+  # THIS IS THE ENGLISH VERSION, I NEED A CHINESE READER TO SEND ME
+  # THE CORRECT PATTERN.  UNTIL THEN THIS MODULE WILL ALWAYS RETURN
+  # 0 in approximate_result_count.
+  return $1 if ($s =~ m!\bout\s+of\s+(?:about\s+)?([,0-9]+)!i);
+  return -1;
+  } # _string_has_count
+
+sub _a_is_next_link
+  {
+  my $self = shift;
+  my $oA = shift;
+  return 0 unless (ref $oA);
+  # I can not type Chinese, nor even cut-and-paste into Emacs with
+  # confidence that the encoding will not get screwed up, so I resort
+  # to this ugliness:
+  return ($oA->as_HTML =~ m!&Iuml;&Acirc;&Ograve;&raquo;&Ograve;&sup3;!i);
+  } # _a_is_next_link
 
 1;
 

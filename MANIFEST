@@ -19,6 +19,7 @@ MANIFEST			This list of files
 README
 t/basic.t
 t/china.t
+t/de.t
 t/echostar-advanced.t
 t/echostar.t
 t/echostar_i_c.t

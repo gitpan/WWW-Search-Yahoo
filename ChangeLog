@@ -1,3 +1,14 @@
+2004-05-13  Kingpin  <mthurn@verizon.net>
+
+	* lib/WWW/Search/Yahoo.pm (_string_has_count): new method
+	(_a_is_next_link): new method
+
+	* lib/WWW/Search/Yahoo/DE.pm (_a_is_next_link): new method
+	(_string_has_count): new method
+
+	* lib/WWW/Search/Yahoo/China.pm (_a_is_next_link): new method
+	(_string_has_count): new method
+
 2004-03-28  Kingpin  <mthurn@verizon.net>
 
 	* lib/WWW/Search/Yahoo/News/Advanced.pm (parse_tree): overhaul for new webpage format
