@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Wm. L. Scheding and Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 1.39 2001/03/30 17:20:43 mthurn Exp mthurn $
+# $Id: Yahoo.pm,v 1.41 2001/07/16 15:16:45 mthurn Exp $
 
 =head1 NAME
 
@@ -63,7 +63,11 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 If it''s not listed here, then it wasn''t a meaningful nor released revision.
 
-=head2 2.22, 2001-03031
+=head2 2.23, 2001-07-16
+
+even better support for subclassing
+
+=head2 2.22, 2001-03-31
 
 added support for subclassing, for regional Yahoo sites
 
@@ -154,7 +158,7 @@ package WWW::Search::Yahoo;
 # @EXPORT_OK = qw();
 @ISA = qw( WWW::Search ); # Exporter);
 
-$VERSION = '2.22';
+$VERSION = '2.23';
 $MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
 
 use Carp ();
@@ -256,31 +260,33 @@ sub native_retrieve_some
   {
   my ($self) = @_;
   print STDERR " +   Yahoo::native_retrieve_some()\n" if $self->{_debug};
-  
   # fast exit if already done
   return undef if (!defined($self->{_next_url}));
-  my $hits_found = 0;
-  
   # If this is not the first page of results, sleep so as to not overload the server:
   $self->user_agent_delay if 1 < $self->{'_next_to_retrieve'};
-  
   # get some
-  my $urlCurrent = $self->{_next_url};
-  print STDERR " +   sending request ($urlCurrent)\n" if $self->{_debug};
-  my $response = $self->http_request('GET', $urlCurrent);
+  print STDERR " +   sending request (", $self->{'_next_url'}, ")\n" if $self->{_debug};
+  my $response = $self->http_request('GET', $self->{'_next_url'});
+  $self->{_prev_url} = $self->{_next_url};
+  $self->{'_next_url'} = undef;
   $self->{response} = $response;
   if (! $response->is_success)
     {
     return undef;
     } # if
-  
-  $self->{'_next_url'} = undef;
 
   # Parse the output:
   my $tree = new HTML::TreeBuilder;
   $tree->parse($response->content);
   $tree->eof;
+  return $self->parse_tree($tree);
+  } # native_retrieve_some
 
+sub parse_tree
+  {
+  my $self = shift;
+  my $tree = shift;
+  my $hits_found = 0;
   # The hit count is inside a <FONT> tag:
   my @aoFONT = $tree->look_down('_tag', 'font');
  FONT_TAG:
@@ -368,14 +374,14 @@ sub native_retrieve_some
       printf STDERR " +   A == %s\n", $oA->as_HTML if 2 <= $self->{_debug};
       if ($oA->as_text =~ m!next!i)
         {
-        $self->{_next_url} = $HTTP::URI_CLASS->new_abs($oA->attr('href'), $urlCurrent);
+        $self->{_next_url} = $HTTP::URI_CLASS->new_abs($oA->attr('href'), $self->{'_prev_url'});
         last TABLE;
         } # if
       } # foreach $oA
     } # foreach $oTABLE
   $tree->delete;
   return $hits_found;
-  } # native_retrieve_some
+  } # parse_tree
 
 
 1;

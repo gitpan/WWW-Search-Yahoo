@@ -1,10 +1,10 @@
 # Korea.pm
 # by Martin Thurn
-# $Id: Korea.pm,v 1.2 2001/03/30 18:18:25 mthurn Exp $
+# $Id: Korea.pm,v 1.3 2001/05/03 16:44:12 mthurn Exp $
 
 =head1 NAME
 
-WWW::Search::Yahoo::Korea - class for searching Yahoo! Korea (not Ireland)
+WWW::Search::Yahoo::Korea - class for searching Yahoo! Korea
 
 =head1 SYNOPSIS
 
@@ -53,6 +53,10 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 If it''s not listed here, then it wasn''t a meaningful nor released revision.
 
+=head2 2.02
+
+minor pod update
+
 =head2 2.01, 2001-03-30
 
 First public release.
@@ -70,7 +74,7 @@ use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
 
-$VERSION = '2.01';
+$VERSION = '2.02';
 $MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
 
 

@@ -5,4 +5,5 @@ README
 lib/WWW/Search/Yahoo.pm
 lib/WWW/Search/Yahoo/Korea.pm
 lib/WWW/Search/Yahoo/UK.pm
+lib/WWW/Search/Yahoo/News/Advanced.pm
 test.pl

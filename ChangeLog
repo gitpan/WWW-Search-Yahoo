@@ -1,3 +1,11 @@
+2001-07-16  Kingpin  <mthurn@tasc.com>
+
+	* test.pl: fix old tests, and add new tests for Advanced News
+
+	* lib/WWW/Search/Yahoo.pm (parse_tree): new method for subclasses to use
+
+	* lib/WWW/Search/Yahoo/News/Advanced.pm: new backend
+
 2001-03-31  Kingpin  <mthurn@tasc.com>
 	
 	* VERSION 2.22 RELEASED
