@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Wm. L. Scheding and Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 1.44 2002/03/28 16:09:21 mthurn Exp mthurn $
+# $Id: Yahoo.pm,v 1.48 2002/11/01 15:18:15 mthurn Exp $
 
 =head1 NAME
 
@@ -48,7 +48,7 @@ This module adheres to the C<WWW::Search> test suite mechanism.
 =head1 AUTHOR
 
 As of 1998-02-02, C<WWW::Search::Yahoo> is maintained by Martin Thurn
-(MartinThurn@iname.com).
+(mthurn@cpan.org).
 
 C<WWW::Search::Yahoo> was originally written by Wm. L. Scheding,
 based on C<WWW::Search::AltaVista>.
@@ -62,6 +62,10 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 =head1 VERSION HISTORY
 
 If it''s not listed here, then it wasn''t a meaningful nor released revision.
+
+=head2 2.27, 2002-10-31
+
+new URL; tweak parser for new webpage format
 
 =head2 2.24, 2001-12-24
 
@@ -162,8 +166,8 @@ package WWW::Search::Yahoo;
 # @EXPORT_OK = qw();
 @ISA = qw( WWW::Search ); # Exporter);
 
-$VERSION = '2.25';
-$MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
+$VERSION = '2.27';
+$MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 use Carp ();
 use Data::Dumper;  # for debugging only
@@ -183,8 +187,8 @@ sub gui_query
                          # 'hs' => 0,
                         };
   # print STDERR " +   Yahoo::gui_query() is calling native_query()...\n";
-  $rh->{'search_base_url'} = 'http://search.yahoo.com';
-  $rh->{'search_base_path'} = '/bin/search';
+  $rh->{'search_base_url'} = 'http://google.yahoo.com';
+  $rh->{'search_base_path'} = '/bin/query';
   return $self->native_query($sQuery, $rh);
   } # gui_query
 
@@ -203,26 +207,21 @@ sub native_setup_search
   # http://www.yahoo.com instead of http://www.yahoo.com/robots.txt,
   # and dumps a thousand warnings to STDERR.
   $self->user_agent('non-robot');
-  $self->{agent_e_mail} = 'MartinThurn@iname.com';
+  # $self->{agent_e_mail} = 'mthurn@cpan.org';
 
   $self->{_next_to_retrieve} = 1;
-  $self->{'_num_hits'} = 0;
 
-  $self->{'search_base_url'} ||= 'http://ink.yahoo.com';
-  $self->{'search_base_path'} ||= '/bin/query';
+  $self->{'search_base_url'} ||= 'http://search.yahoo.com';
+  $self->{'search_base_path'} ||= '/search';
   if (! defined($self->{'_options'}))
     {
     # We do not clobber the existing _options hash, if there is one;
     # e.g. if gui_search() was already called on this object
     $self->{'_options'} = {
-                           'o' => 1,
-                           'p' => $native_query,
-                           'd' => 'y',  # Yahoo's index, not usenet
-                           'za' => 'or',  # OR of query words
-                           'h' => 'c',  # web sites
-                           'g' => 0,
-                           'n' => $self->{_hits_per_page},
-                           'b' => $self->{_next_to_retrieve}-1,
+                           'vo' => $native_query,
+                           'h' => 'w',  # web sites
+                           # 'n' => $self->{_hits_per_page},
+                           # 'b' => $self->{_next_to_retrieve}-1,
                           };
     } # if
   my $rhOptions = $self->{'_options'};
@@ -323,29 +322,33 @@ sub parse_tree
       }
     print STDERR " +   URL   == $sURL\n" if 2 <= $self->{_debug};
     # Ignore Yahoo Directory categories, etc.:
-    next LI if $sURL =~ m!^http://dir\.yahoo\.com!;
+    next LI if $sURL =~ m!(\A|/search/empty/\?)http://dir\.yahoo\.com!;
     # The text of the LI is the description:
     my $sDesc = $oLI->as_text;
     # Chop off extraneous:
     $sDesc =~ s!More Results From: .*?\Z!!i;
-    $sDesc =~ s!\s?\d+-\d+\sof\s\d+\s\240.*?\Z!!i;
+    $sDesc =~ s!\s?\d+-\d+\sof\s\d+\s\|?\240.*?\Z!!i;
 
     print STDERR " +   DESC  == $sDesc\n" if 2 <= $self->{_debug};
     my $hit = new WWW::SearchResult;
     $hit->add_url($sURL);
+    $sTitle =~ s!\A[\240\s\t\r\n\ ]+!!;
+    $sTitle =~ s![\240\s\t\r\n\ ]+\Z!!;
+    $sDesc =~ s!\A[\240\s\t\r\n\ ]+!!;
+    $sDesc =~ s![\240\s\t\r\n\ ]+\Z!!;
     $hit->title($sTitle);
     $hit->description($sDesc);
     push(@{$self->{cache}}, $hit);
-    $self->{'_num_hits'}++;
     $hits_found++;
     $oLI->delete;
     $oLI->detach;
     } # foreach oLI
 
-  # The "next" button is in a table:
+  # The "next" button is in a table...
   my @aoTABLE = $tree->look_down('_tag', 'table');
+  # ...but we want the LAST one appearing on the page:
  TABLE:
-  foreach my $oTABLE (@aoTABLE)
+  foreach my $oTABLE (reverse @aoTABLE)
     {
     printf STDERR " + TABLE == %s\n", $oTABLE->as_HTML if 2 <= $self->{_debug};
     my @aoA = $oTABLE->look_down('_tag', 'a');
@@ -374,6 +377,7 @@ GUI search:
 http://ink.yahoo.com/bin/query?p=sushi+restaurant+Columbus+Ohio&hc=0&hs=0
 
 Advanced search:
+http://search.yahoo.com/search?h=w&fr=op&va=&vp=&vo=Martin+Thurn&ve=&bbase=Search&vl=&vc=&vd=all&vt=any&vss=i&vs=&vr=&vk=
 http://ink.yahoo.com/bin/query?o=1&p=LSAm&d=y&za=or&h=c&g=0&n=20
 
 actual next link from page:

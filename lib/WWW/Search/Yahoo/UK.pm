@@ -1,6 +1,6 @@
 # UK.pm
 # by Martin Thurn
-# $Id: UK.pm,v 1.2 2001/03/30 18:18:05 mthurn Exp $
+# $Id: UK.pm,v 1.3 2002/03/29 20:15:52 mthurn Exp $
 
 =head1 NAME
 
@@ -41,7 +41,7 @@ There are no tests defined for this module.
 =head1 AUTHOR
 
 C<WWW::Search::Yahoo> is maintained by Martin Thurn
-(MartinThurn@iname.com).
+(mthurn@cpan.org).
 
 =head1 LEGALESE
 
@@ -71,7 +71,7 @@ use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
 
 $VERSION = '2.01';
-$MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
+$MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub native_setup_search
   {

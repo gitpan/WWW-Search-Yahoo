@@ -1,10 +1,15 @@
 use ExtUtils::MakeMaker;
 WriteMakefile(
               'NAME' => 'WWW::Search::Yahoo',
-              'VERSION' => '2.28',
+              'VERSION' => '2.29',
               'PREREQ_PM' => {
-                              'HTML::TreeBuilder' => 3.00,
-                              'Jcode' => 0,  # only needed for `make test` on Yahoo::Japan::News
-                              'WWW::Search' => 2.33,
+                              'HTML::TreeBuilder' => 3,
+                              # Jcode is needed for `make test` on Yahoo::Japan::News
+                              'Jcode' => 0,
+                              'Test::More' => 0,
+                              # We need the version of WWW::Search
+                              # that sets store_comments() on its
+                              # HTML::TreeBuilder object:
+                              'WWW::Search' => 2.36,
                              },
              );

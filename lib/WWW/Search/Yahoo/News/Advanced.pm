@@ -1,5 +1,5 @@
 
-# $Id: Advanced.pm,v 1.5 2001/12/24 15:49:02 mthurn Exp $
+# $Id: Advanced.pm,v 1.7 2002/11/01 15:08:21 mthurn Exp $
 
 =head1 NAME
 
@@ -58,7 +58,7 @@ There are no tests defined for this module.
 =head1 AUTHOR
 
 C<WWW::Search::Yahoo::News::Advanced> is maintained by Martin Thurn
-(MartinThurn@iname.com).
+(mthurn@cpan.org).
 
 =head1 LEGALESE
 
@@ -69,6 +69,10 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 =head1 VERSION HISTORY
 
 If it''s not listed here, then it wasn''t a meaningful nor released revision.
+
+=head2 2.04, 2002-10-31
+
+overhaul for new webpage format
 
 =head2 2.01, 2001-07-16
 
@@ -83,14 +87,15 @@ package WWW::Search::Yahoo::News::Advanced;
 use Data::Dumper;  # for debugging only
 use Date::Manip;
 use WWW::Search qw( strip_tags );
+use WWW::Search::Result;
 use WWW::Search::Yahoo;
 
 use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
 
-$VERSION = '2.03';
-$MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
+$VERSION = '2.04';
+$MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub native_setup_search
   {
@@ -138,67 +143,104 @@ sub native_setup_search
   } # native_setup_search
 
 
+sub preprocess_results_page
+  {
+  my $self = shift;
+  # Confound it!  All the results are in a <P> except the first one!
+  my $s = shift;
+  $s =~ s!</font></td></tr></table>!</table> <P>!g;
+  return $s;
+  } # preprocess_results_page
+
+
 sub parse_tree
   {
   my $self = shift;
   my $tree = shift;
   my $hits_found = 0;
-  # The hit count is inside a <CENTER> tag...
-  my @aoCENTER = $tree->look_down('_tag', 'center');
- CENTER_TAG:
-  foreach my $oCENTER (@aoCENTER)
+  my @aoFONTcount = $tree->look_down('_tag', 'font',
+                                     'face' => 'arial',
+                                     'size' => '-1',
+                                    );
+ FONTcount_TAG:
+  foreach my $oFONT (@aoFONTcount)
     {
-    next unless ref $oCENTER;
-    # ...inside a FONT tag with size=-1:
-    my @aoFONT = $tree->look_down('_tag', 'font',
-                                  'size' => '-1',
-                                 );
- FONT_TAG:
-    foreach my $oFONT (@aoFONT)
+    my $s = $oFONT->as_text;
+    print STDERR " + FONTcount == ", $oFONT->as_HTML if 2 <= $self->{_debug};
+    # print STDERR " +   TEXT == ", $s, "\n" if 2 <= $self->{_debug};
+    if ($s =~ m!\d+\s*-\s*\d+\s+of\s+(\d+)!)
       {
-      my $s = $oFONT->as_text;
-      print STDERR " + FONT == ", $oFONT->as_HTML if 2 <= $self->{_debug};
-      # print STDERR " +   TEXT == ", $s, "\n" if 2 <= $self->{_debug};
-      if ($s =~ m!\d+\s+-\s+\d+\s+of\s+(\d+)!)
-        {
-        my $iCount = $1;
-        # print STDERR " +   found number $iCount\n" if 2 <= $self->{_debug};
-        $self->approximate_result_count($iCount);
-        last FONT_TAG;
-        } # if
+      my $iCount = $1;
+      # print STDERR " +   found number $iCount\n" if 2 <= $self->{_debug};
+      $self->approximate_result_count($iCount);
+      last FONTcount_TAG;
+      } # if
     } # foreach FONT_TAG
-  } # foreach CENTER_TAG
 
-  # Each URL result is in a <P> tag:
-  my @aoP = $tree->look_down('_tag', 'p');
-P_TAG:
-  foreach my $oP (@aoP)
+  # Each URL result is in a <FONT size=-1> tag:
+  # <font face="arial" size="-1"><a href="http://story.news.yahoo.com/news?tmpl=story&amp;u=/ap/20021030/ap_on_en_mo/neeson_royal_2">Neeson Nervous About Royal Honor</a></font> <font face="arial" size="-2">(AP)</font><br><font face="arial" size="-1"> ...&quot;<b>Star Wars</b>: Episode I: The Phantom Menace.... <br>- <small><i> Oct 30 7:09 AM ET </i></small> </font>
+  my @aoFONT = $tree->look_down('_tag' => 'font',
+                                'size' => '-1',
+                               );
+FONT_TAG:
+  foreach my $oFONT (@aoFONT)
     {
-    printf STDERR " + P == %s\n", $oP->as_HTML if 2 <= $self->{_debug};
+    my $sPrice = '';
+    printf STDERR "\n + FONT == %s", $oFONT->as_HTML if 2 <= $self->{_debug};
+    my $oAtitle = $oFONT->look_down('_tag', 'a');
+    next FONT_TAG unless ref($oAtitle);
+    my $sURL = $oAtitle->attr('href');
+    next FONT_TAG unless defined($sURL);
+    next FONT_TAG unless ($sURL ne '');
+    next FONT_TAG if $sURL =~ m!search\.yahoo\.com!;
+    print STDERR " +   URL   == $sURL\n" if 2 <= $self->{_debug};
+    # In order to make it easier to parse, make sure everything is an object!
+    $oFONT->parent->objectify_text;
+    # Siblings contain more info.
+    my @aoSib = $oFONT->right;
+    # Next tag contains source:
+    my $oFONTsource = &skip_text_elements(\@aoSib);
+    # Bail if there are no more siblings:
+    next FONT_TAG unless ref($oFONTsource);
+    # Look for price of premium article:
+    if (defined($oFONTsource->attr('color')) && ($oFONTsource->attr('color') eq 'red'))
+      {
+      $oFONTsource->deobjectify_text;
+      $sPrice = $oFONTsource->as_text;
+      printf STDERR " +   FONTprice == %s", $oFONTsource->as_HTML if 2 <= $self->{_debug};
+      $oFONTsource = &skip_text_elements(\@aoSib);
+      } # if
+    printf STDERR " +   FONTsource == %s", $oFONTsource->as_HTML if 2 <= $self->{_debug};
+    my $oBR = &skip_text_elements(\@aoSib);
+    next FONT_TAG unless ref($oBR);
+    printf STDERR " +   BR == %s", $oBR->as_HTML if 2 <= $self->{_debug};
+    my $oFONTdesc = &skip_text_elements(\@aoSib);
+    next FONT_TAG unless ref($oFONTdesc);
+    printf STDERR " +   FONTdesc == %s", $oFONTdesc->as_HTML if 2 <= $self->{_debug};
+
     # The only <i> tag contains the date...
-    my $oI = $oP->look_down('_tag', 'i');
+    my $oI = $oFONTdesc->look_down('_tag', 'i');
     # ...and we only need to look at <P> which contains a date:
-    next P_TAG unless ref($oI);
-    printf STDERR " +   I == %s\n", $oI->as_HTML if 2 <= $self->{_debug};
+    next FONT_TAG unless ref($oI);
+    printf STDERR " +   I == %s", $oI->as_HTML if 2 <= $self->{_debug};
+    $oI->deobjectify_text;
     my $sDate = $oI->as_text;
     # delete this <I> tag so the description is easy to get:
     $oI->detach;
     $oI->delete;
-    my $oA = $oP->look_down('_tag', 'a');
-    next P_TAG unless ref($oA);
-    my $sTitle = $oA->as_text;
-    print STDERR " +   TITLE == $sTitle\n" if 2 <= $self->{_debug};
-    my $sURL = $oA->attr('href');
-    next P_TAG if $sURL =~ m!search\.yahoo\.com!;
-    # Delete this <A> so it doesn't get added to the description:
-    $oA->detach;
-    $oA->delete;
-    print STDERR " +   URL   == $sURL\n" if 2 <= $self->{_debug};
 
     # The (remaining) text of the P is the description:
-    my $sDesc = &strip_tags($oP->as_text);
+    $oFONTdesc->deobjectify_text;
+    my $sDesc = &strip_tags($oFONTdesc->as_text);
+    # Delete junk off end of description:
+    $sDesc =~ s!\s+-\s+\Z!!;
+    # Add price if present:
+    $sDesc .= qq{ [$sPrice]} if ($sPrice ne '');
     print STDERR " +   DESC  == $sDesc\n" if 2 <= $self->{_debug};
-    my $hit = new WWW::SearchResult;
+    $oAtitle->deobjectify_text;
+    my $sTitle = $oAtitle->as_text;
+    print STDERR " +   TITLE == $sTitle\n" if 2 <= $self->{_debug};
+    my $hit = new WWW::Search::Result;
     $hit->add_url($sURL);
     $hit->title($sTitle);
     $hit->description($sDesc);
@@ -206,11 +248,12 @@ P_TAG:
     push(@{$self->{cache}}, $hit);
     $self->{'_num_hits'}++;
     $hits_found++;
-    # Delete this <P> (to make it quicker to find the "Next" link)
-    $oP->detach;
-    $oP->delete;
-    } # foreach oP
+    # Delete this <FONT> (to make it quicker to find the "Next" link)
+    $oFONT->detach;
+    $oFONT->delete;
+    } # foreach oFONT
 
+  $tree->deobjectify_text;
   # The "next" link is a plain old <A>:
   my @aoA = $tree->look_down('_tag', 'a');
 A_TAG:
@@ -228,6 +271,23 @@ A_TAG:
   return $hits_found;
   } # parse_tree
 
+
+sub skip_text_elements
+  {
+  my $ra = shift;
+  my $o;
+  # print STDERR " +     skip_text_elements\n";
+  while (1)
+    {
+    $o = shift(@$ra);
+    # Bail if we run out of arguments:
+    last unless ref($o);
+    # print STDERR (" +     consider o==%s", $o->as_HTML);
+    # All done if we get something not text:
+    last if ($o->tag ne '~text');
+    } # while
+  return $o;
+  } # skip_text_elements
 
 1;
 

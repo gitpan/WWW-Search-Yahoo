@@ -1,3 +1,20 @@
+2002-11-01  Kingpin  <mthurn@carbon.>
+
+	* lib/WWW/Search/Yahoo.pm (native_setup_search): new URL
+	(parse_tree): tweak parser for new webpage format
+
+	* lib/WWW/Search/Yahoo/News/Advanced.pm (parse_tree): overhaul for new webpage format
+
+	* test.pl: switch to Test::More; all tests pass as of today
+
+2002-10-01  Kingpin  <mthurn@carbon.>
+
+	* lib/WWW/Search/Yahoo.pm (gui_query): new URL google.yahoo.com
+
+2002-03-29  Kingpin  <mthurn@copper.dulles.tasc.com>
+
+	* lib/WWW/Search/Yahoo.pm (parse_tree): even more cleanup of title & description
+
 2002-03-28  Kingpin  <mthurn@copper.dulles.tasc.com>
 
 	* lib/WWW/Search/Yahoo.pm (parse_tree): clean up description
