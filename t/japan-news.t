@@ -1,6 +1,9 @@
 use ExtUtils::testlib;
 use Test::More no_plan;
 
+BEGIN { use_ok('Encode', qw( from_to )) };
+BEGIN { use_ok('Encode::JP') };
+BEGIN { use_ok('I18N::Charset') };
 BEGIN { use_ok('WWW::Search') };
 BEGIN { use_ok('WWW::Search::Test') };
 BEGIN { use_ok('WWW::Search::Yahoo') };
@@ -15,23 +18,23 @@ $iDebug = 0;
 # This test returns no results (but we should not get an HTTP error):
 $iDebug = 0;
 &my_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug, $iDebug);
-cmp_ok(0, '==', $WWW::Search::Test::oSearch->approximate_hit_count,
-       '0 == approximate_hit_count');
-SKIP:
-  {
-  eval 'use Jcode';
-  skip 'because Jcode is not installed', 3 if $@;
-  $iDebug = 0;
-  &my_test('normal', Jcode->new('¥«¥¨¥ë')->euc, 1, 39, $iDebug, $iDump);
-  cmp_ok(1, '<=', $WWW::Search::Test::oSearch->approximate_hit_count,
-         '1 <= approximate_hit_count');
-  cmp_ok($WWW::Search::Test::oSearch->approximate_hit_count, '<=', 39,
-         'approximate_hit_count <= 39');
-  $iDebug = 0;
-  &my_test('normal', Jcode->new('³ô¼°')->euc, 41, undef, $iDebug, $iDump);
-  cmp_ok(41, '<=', $WWW::Search::Test::oSearch->approximate_hit_count,
-         '41 <= approximate_hit_count');
-  } # end of SKIP block
+# My Emacs decided to use this encoding when I typed Japanese and
+# saved this file:
+my $sFrom = &I18N::Charset::enco_charset_name('iso-2022-jp');
+# yahoo.co.jp expects queries to be in this encoding:
+my $sEUC = &I18N::Charset::enco_charset_name('EUC-jp');
+# diag("sFrom =$sFrom=");
+# diag("sEUC  =$sEUC=");
+$iDebug = 0;
+my $sQuery = '$B%+%(%k(B';
+# diag("before  =$sQuery=");
+from_to($sQuery, $sFrom, $sEUC);
+# diag("after   =$sQuery=");
+&my_test('normal', $sQuery, 1, 39, $iDebug, $iDump);
+$iDebug = 0;
+$sQuery = '$BEl5~(B';
+from_to($sQuery, $sFrom, $sEUC);
+&my_test('normal', $sQuery, 41, undef, $iDebug, $iDump);
 SKIP_REST:
 exit 0;
 
@@ -47,9 +50,19 @@ sub my_test
   {
   # Same arguments as WWW::Search::Test::count_results()
   my ($sType, $sQuery, $iMin, $iMax, $iDebug, $iPrintResults) = @_;
-  my $iCount = &WWW::Search::Test::count_results(@_);
-  cmp_ok($iMin, '<=', $iCount, qq{lower-bound num-hits for query=$sQuery}) if defined $iMin;
-  cmp_ok($iCount, '<=', $iMax, qq{upper-bound num-hits for query=$sQuery}) if defined $iMax;
+  my $iCount = &count_results(@_);
+  if (defined $iMin)
+    {
+    cmp_ok($iMin, '<=', $iCount, "lower-bound num-hits for query=$sQuery");
+    cmp_ok($iMin, '<=', $WWW::Search::Test::oSearch->approximate_result_count,
+           qq{lower-bound approximate_result_count});
+    } # if
+  if (defined $iMax)
+    {
+    cmp_ok($iCount, '<=', $iMax, "upper-bound num-hits for query=$sQuery");
+    cmp_ok($WWW::Search::Test::oSearch->approximate_result_count, '<=', $iMax,
+           qq{upper-bound approximate_result_count});
+    } # if
   } # my_test
 
 __END__

@@ -1,3 +1,9 @@
+2004-09-25  Kingpin  <mthurn@verizon.net>
+
+	* t/japan-news.t: use Encode instead of Jcode
+
+	* lib/WWW/Search/Yahoo/Japan/News.pm (parse_tree): fix parse_debug level for msgs
+
 2004-09-24  Kingpin  <mthurn@verizon.net>
 
 	* lib/WWW/Search/Yahoo.pm (parse_tree): fix 'http%3A' in URLs

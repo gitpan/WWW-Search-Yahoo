@@ -1,4 +1,4 @@
-# $Id: News.pm,v 2.62 2004/07/24 18:56:53 Daddy Exp $
+# $Id: News.pm,v 2.64 2004/09/25 23:49:43 Daddy Exp $
 
 =head1 NAME
 
@@ -7,9 +7,20 @@ WWW::Search::Yahoo::Japan::News - class for searching News on Yahoo Japan (in Ja
 =head1 SYNOPSIS
 
   use Jcode;
+  my $sQueryJP = "ÎÁÍý¤ÎÅ´¿Í";
+  my $sQuery = Jcode->new($sQueryJP)->euc;
+
+  (OR)
+
+  use Encode qw( from_to );
+  my $sQuery = "ÎÁÍý¤ÎÅ´¿Í";
+  from_to($sQuery, $sMyEncoding, 'euc-jp');
+
+  (THEN)
+
+  my $sQuery = WWW::Search::escape_query($sQuery);
   use WWW::Search;
   my $oSearch = new WWW::Search('Yahoo::Japan::News');
-  my $sQuery = WWW::Search::escape_query(Jcode->new("ÎÁÍý¤ÎÅ´¿Í")->euc);
   $oSearch->native_query($sQuery);
   while (my $oResult = $oSearch->next_result())
     print $oResult->url, "\n";
@@ -64,7 +75,7 @@ package WWW::Search::Yahoo::Japan::News;
 
 @ISA = qw( WWW::Search WWW::Search::Yahoo );
 
-$VERSION = do { my @r = (q$Revision: 2.62 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.64 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 use Data::Dumper; # for debugging only
@@ -111,14 +122,14 @@ sub parse_tree
   foreach my $oSMALL (@aoSMALL)
     {
     next unless ref $oSMALL;
-    print STDERR " +   try SMALL ==", $oSMALL->as_HTML, "==\n" if $self->{_debug};
+    print STDERR " +   try SMALL ==", $oSMALL->as_HTML, "==\n" if (2 <= $self->{_debug});
     my $sSmall = $oSMALL->as_text;
-    print STDERR " +   try SMALL ==$sSmall==\n" if $self->{_debug};
+    print STDERR " +   try SMALL ==$sSmall==\n" if (2 <= $self->{_debug});
     if ($sSmall =~ m!(?:\241\312)?(\d+)·ïÃæ\d?!)
       {
       my $iCount = $1;
       $self->approximate_result_count($iCount);
-      print STDERR " +   num results = $iCount\n" if $self->{_debug};
+      print STDERR " +   num results = $iCount\n" if (2 <= $self->{_debug});
       last SMALL_TAG;
       } # if
     } # foreach
@@ -133,7 +144,7 @@ sub parse_tree
     if ($sAnext =~ m!¼¡¤Î\d+·ï!)
       {
       $self->{_next_url} = $self->absurl($self->{'_prev_url'}, $oANEXT->attr('href'));
-      print STDERR " +   next link = $self->{_next_url}\n" if $self->{_debug};
+      print STDERR " +   next link = $self->{_next_url}\n" if (2 <= $self->{_debug});
       last ANEXT_TAG;
       } # if
     } # foreach
@@ -203,7 +214,7 @@ sub parse_tree
     $self->{'_num_hits'}++;
     $hits_found++;
     } # foreach
-  print STDERR " +   found $hits_found results on this page\n" if $self->{_debug};
+  print STDERR " +   found $hits_found results on this page\n" if (2 <= $self->{_debug});
   return $hits_found;
   } # parse_tree
 
