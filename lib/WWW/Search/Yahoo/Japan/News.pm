@@ -1,4 +1,4 @@
-# $Id: News.pm,v 1.7 2002/12/20 22:37:25 mthurn Exp $
+# $Id: News.pm,v 1.9 2003-07-14 23:25:10-04 kingpin Exp kingpin $
 
 =head1 NAME
 
@@ -62,6 +62,10 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 If it''s not listed here, then it wasn''t a meaningful nor released revision.
 
+=head2 2.05, 2003-07-10
+
+tweak for result-count parsing; fix *nix Encode un-compatibility
+
 =head2 2.02, 2001-09-13
 
 bugfix, apparently 2.01 could not load at all!?!
@@ -76,7 +80,7 @@ package WWW::Search::Yahoo::Japan::News;
 
 @ISA = qw( WWW::Search WWW::Search::Yahoo );
 
-$VERSION = '2.04';
+$VERSION = '2.05';
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 use Data::Dumper; # for debugging only
@@ -100,7 +104,17 @@ sub native_setup_search
                                           @_);
   } # native_setup_search
 
-# sub native_retrieve_some() is inherited from WWW::Search::Yahoo
+# On Solaris, it seems that our Japanese pattern-matching FAILS unless
+# we coerce the string-variable containing the webpage like through
+# this function.  So do not remove this function!:
+
+sub preprocess_results_page
+  {
+  my $self = shift;
+  my $s = shift;
+  print STDERR ('=' x 25, $s, '=' x 25) if (5 < $self->{_debug});
+  return $s;
+  } # preprocess_results_page
 
 # When I ran queries with Netscape, yahoo gave me EUC encoding.  So
 # that's what I use in the regexen below.  Thanks to Emacs 20.7, I can
@@ -117,8 +131,10 @@ sub parse_tree
   foreach my $oSMALL (@aoSMALL)
     {
     next unless ref $oSMALL;
+    print STDERR " +   try SMALL ==", $oSMALL->as_HTML, "==\n" if $self->{_debug};
     my $sSmall = $oSMALL->as_text;
-    if ($sSmall =~ m!\241\312(\d+)·ïÃæ!)
+    print STDERR " +   try SMALL ==$sSmall==\n" if $self->{_debug};
+    if ($sSmall =~ m!(?:\241\312)?(\d+)·ïÃæ\d?!)
       {
       my $iCount = $1;
       $self->approximate_result_count($iCount);

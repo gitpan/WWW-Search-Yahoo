@@ -11,20 +11,26 @@ my $iDump = 0;
 JAPAN_NEWS_TEST:
 $iDebug = 0;
 &my_engine('Yahoo::Japan::News');
+goto SKIP;
 # This test returns no results (but we should not get an HTTP error):
 $iDebug = 0;
 &my_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug, $iDebug);
+cmp_ok(0, '==', $WWW::Search::Test::oSearch->approximate_hit_count,
+       '0 == approximate_hit_count');
 SKIP:
   {
   eval 'use Jcode';
   skip 'because Jcode is not installed', 3 if $@;
   $iDebug = 0;
-  &my_test('normal', Jcode->new('カエル')->euc, 1, 19, $iDebug, $iDump);
+  &my_test('normal', Jcode->new('カエル')->euc, 1, 39, $iDebug, $iDump);
+  cmp_ok(1, '<=', $WWW::Search::Test::oSearch->approximate_hit_count,
+         '1 <= approximate_hit_count');
+  cmp_ok($WWW::Search::Test::oSearch->approximate_hit_count, '<=', 39,
+         'approximate_hit_count <= 39');
   $iDebug = 0;
-  # &my_test('normal', Jcode->new('ホールディングス')->euc, 21, 39, $iDebug, $iDump);
   &my_test('normal', Jcode->new('株式')->euc, 41, undef, $iDebug, $iDump);
   cmp_ok(41, '<=', $WWW::Search::Test::oSearch->approximate_hit_count,
-         'approximate_hit_count');
+         '41 <= approximate_hit_count');
   } # end of SKIP block
 SKIP_REST:
 exit 0;
