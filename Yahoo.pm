@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Wm. L. Scheding and Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 1.27 2000/04/27 17:23:55 mthurn Exp $
+# $Id: Yahoo.pm,v 1.29 2000/05/10 17:50:21 mthurn Exp $
 
 =head1 NAME
 
@@ -128,19 +128,20 @@ require Exporter;
 @EXPORT_OK = qw();
 @ISA = qw(WWW::Search Exporter);
 
-$VERSION = '2.11';
+$VERSION = '2.13';
 $MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
 
 use Carp ();
 use WWW::Search(qw( generic_option strip_tags ));
 require WWW::SearchResult;
+use URI;
 
 sub gui_query
   {
   # actual URL as of 2000-03-27 is
   # http://search.yahoo.com/bin/search?p=sushi+restaurant+Columbus+Ohio
   my ($self, $sQuery, $rh) = @_;
-  $self->{'search_base_url'} = 'http://ink.yahoo.com';
+  $self->{'search_base_url'} = 'http://search.yahoo.com';
   $self->{'_options'} = {
                          'search_url' => $self->{'search_base_url'} .'/bin/search',
                          'p' => $sQuery,
@@ -219,8 +220,9 @@ sub native_retrieve_some
   $self->user_agent_delay if 1 < $self->{'_next_to_retrieve'};
   
   # get some
-  print STDERR " +   sending request (",$self->{_next_url},")\n" if $self->{_debug};
-  my($response) = $self->http_request('GET', $self->{_next_url});
+  my $urlCurrent = $self->{_next_url};
+  print STDERR " +   sending request ($urlCurrent)\n" if $self->{_debug};
+  my($response) = $self->http_request('GET', $urlCurrent);
   $self->{response} = $response;
   if (!$response->is_success) 
     {
@@ -230,11 +232,10 @@ sub native_retrieve_some
   $self->{'_next_url'} = undef;
   print STDERR " +   got response\n" if $self->{_debug};
   # parse the output
-  my($HEADER, $HITS, $TRAILER) = qw(HE HI TR);
-  my($hits_found) = 0;
-  my($state) = ($HEADER);
-  my($cite) = "";
-  my($hit) = ();
+  my ($HEADER, $HITS, $INSIDE, $TRAILER) = qw(HE HI IY TR);
+  my $hits_found = 0;
+  my $state = $HEADER;
+  my $hit;
  LINE_OF_INPUT:
   foreach ($self->split_lines($response->content()))
     {
@@ -248,7 +249,7 @@ sub native_retrieve_some
         } # if
       } # if debug
     if ($state eq $HITS &&
-        m!<a\shref=\"([^\"]+)">Next\s20\smatches</a>!i)
+        m!<a\shref=\"([^\"]+)">Next\s\d+\smatches</a>!i)
       {
       # Actual line of input is:
       # <a href="/bin/query?p=sushi+restaurant+Columbus+Ohio&b=21&hc=0&hs=0">Next 20 matches</a></font></center>
@@ -256,11 +257,59 @@ sub native_retrieve_some
       my $sURL = $1;
       $self->{'_next_to_retrieve'} += $self->{'_hits_per_page'};
       $self->{'_next_to_retrieve'} = $1 if $sURL =~ m/b=(\d+)/;
-      $self->{'_next_url'} = $self->{'search_base_url'} . $sURL;
+      $self->{'_next_url'} = URI->new_abs($sURL, $urlCurrent);
       print STDERR " + next URL is ", $self->{'_next_url'}, "\n" if 2 <= $self->{_debug};
       $state = $TRAILER;
       next LINE_OF_INPUT;
       }
+    if ($state eq $HITS &&
+        m!<a\shref=\"([^\"]+)">Go\sTo\sWeb\sPage\sMatches</a>!i)
+      {
+      # Actual line of input is:
+      # <a href="http://ink.yahoo.com/bin/query?p=toyota+camry&hc=1&hs=5">Go To Web Page Matches</a>
+      print STDERR "gui 1 next line\n" if 2 <= $self->{_debug};
+      my $sURL = $1;
+      $self->{'_next_to_retrieve'} += $self->{'_hits_per_page'};
+      $self->{'_next_to_retrieve'} = $1 if $sURL =~ m/b=(\d+)/;
+      # print STDERR " +   sURL       = $sURL\n";
+      # print STDERR " +   urlCurrent = $urlCurrent\n";
+      $self->{'_next_url'} = URI->new_abs($sURL, $urlCurrent);
+      print STDERR " + next URL is ", $self->{'_next_url'}, "\n" if 2 <= $self->{_debug};
+      $state = $TRAILER;
+      next LINE_OF_INPUT;
+      }
+
+    elsif ($state eq $HITS &&
+           m@Inside\sYahoo!\sMatches@ )
+      {
+      # Actual line of input is:
+      # <font face=arial><b>Inside Yahoo! Matches</b></font><p>
+      print STDERR "inside yahoo line\n" if 2 <= $self->{_debug};
+      $state = $INSIDE;
+      }
+    elsif ($state eq $INSIDE)
+      {
+      my @asHits = split/<br\076/;
+      foreach my $sLine (@asHits)
+        {
+        print STDERR " + $state ===$sLine=== " if 2 <= $self->{'_debug'};
+        if ($sLine =~ m!href=\"(.+?)\"!i)
+          {
+          print STDERR "hit" if 2 <= $self->{'_debug'};
+          if (defined($hit)) 
+            {
+            push(@{$self->{cache}}, $hit);
+            } # if
+          $hit = new WWW::SearchResult;
+          $hit->add_url($1);
+          $hit->title(strip_tags($sLine));
+          $hits_found++;
+          } # if
+        print STDERR "\n" if 2 <= $self->{'_debug'};
+        } # foreach
+      $state = $HITS;
+      }
+
     elsif ($state eq $HITS &&
            m!^<li><a\shref=\"([^\"]+)">(.+?)</a>\s-\s(.+?)<br>.+<p>$!i)
       {
@@ -271,7 +320,7 @@ sub native_retrieve_some
       if (defined($hit)) 
         {
         push(@{$self->{cache}}, $hit);
-        }
+        } # if
       $hit = new WWW::SearchResult;
       $hit->add_url($sURL);
       $hit->title(strip_tags($sTitle));
@@ -289,6 +338,7 @@ sub native_retrieve_some
       # Don't change state, and don't go to the next line! The <LI> on
       # this line is the next hit!
       }
+
     elsif ($state eq $HITS && m=^(.*?)\074BR>\074cite>=)
       {
       # Actual line of input is:
@@ -337,6 +387,7 @@ sub native_retrieve_some
       $self->approximate_result_count($1);
       $state = $HITS;
       }
+
     elsif ($state eq $HITS &&
            m|\074LI>\074A HREF=\042([^\042]+)\042>(.*)\074/A>|i) 
       {
@@ -358,7 +409,8 @@ sub native_retrieve_some
       $hit->add_url($sURL);
       $hits_found++;
       $hit->title(strip_tags($sTitle));
-      } 
+      }
+ 
     elsif ($state eq $HITS && m@\074a\shref=\"([^"]+)\">(Next|\264\331\300\275)\s*\d+@i)
       {
       print STDERR "next line\n" if 2 <= $self->{_debug};
@@ -369,10 +421,11 @@ sub native_retrieve_some
       my $sURL = $1;
       $self->{'_next_to_retrieve'} += $self->{'_hits_per_page'};
       $self->{'_next_to_retrieve'} = $1 if $sURL =~ m/b=(\d+)/;
-      $self->{'_next_url'} = $self->{'search_base_url'} . $sURL;
+      $self->{'_next_url'} = URI->new_abs($sURL, $urlCurrent);
       print STDERR " + next URL is ", $self->{'_next_url'}, "\n" if 2 <= $self->{_debug};
       $state = $TRAILER;
-      } 
+      }
+ 
     else 
       {
       print STDERR "didn't match\n" if 2 <= $self->{_debug};

@@ -5,6 +5,7 @@ WriteMakefile(
               'NAME' => 'WWW::Search::Yahoo',
               'VERSION_FROM' => 'Yahoo.pm', # finds $VERSION
               'PREREQ_PM' => {
+                              'URI' => 0,
                               'WWW::Search' => 2.13,
                              },
              );
