@@ -27,28 +27,29 @@ $WWW::Search::Test::iTest = 1;
 
 # goto GUI_TEST;
 # goto MULTI_TEST;
+# goto NEWS_ADVANCED_TEST;
+
 my $debug = 0;
 
 # This test returns no results (but we should not get an HTTP error):
 &run_test($WWW::Search::Test::bogus_query, 0, 0, $debug);
 # This query returns 1 page of results:
 &run_test('LS'.'AM repl'.'ication', 2, 84, $debug);
-
-# goto GUI_TEST;
-
 MULTI_TEST:
 # This query returns MANY pages of results:
 &run_test('pok'.'emon', 22, undef, $debug);
 
 GUI_TEST:
 # This GUI query returns 1 page of results:
-&run_gui_test('"Bo'.'b Fortu'.'na"', 1, 9, $debug);
+&run_gui_test('"Yoda Stories demo"', 1, 19, $debug);
 # This GUI query returns 2 pages of results:
 &run_gui_test('"Shel'.'agh Fra'.'ser"', 21, undef, $debug);
 
+NEWS_ADVANCED_TEST:
 &new_engine('Yahoo::News::Advanced');
-&run_test('Geor'.'ge Lu'.'cas', 1, 99, $debug);
-&run_test('Bangladesh', 1, 199, $debug);
+&run_test('Yoda', 1, 99, $debug);
+&run_test('Bangladesh', 101, 199, $debug);
 $WWW::Search::Test::oSearch->date_from('2001-07-05');
 $WWW::Search::Test::oSearch->date_to(  '2001-07-15');
-&run_test('Geor'.'ge Lu'.'cas', 7, 7, $debug);
+# $debug = 2;
+&run_test('"Geor'.'ge Lu'.'cas"', 2, 2, $debug);

@@ -1,5 +1,5 @@
 
-# $Id: Advanced.pm,v 1.2 2001/07/16 15:15:14 mthurn Exp mthurn $
+# $Id: Advanced.pm,v 1.3 2001/07/16 20:05:05 mthurn Exp $
 
 =head1 NAME
 
@@ -86,7 +86,7 @@ use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
 
-$VERSION = '2.01';
+$VERSION = '2.02';
 $MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
 
 sub native_setup_search
@@ -118,9 +118,15 @@ sub native_setup_search
     $sDateTo = &UnixDate(&ParseDate('tomorrow'), '%m/%d/%y');
     }
   $self->{'_options'} = {
-                         'p' => $sQuery,
-                         'n' => 100,  # 10 for testing, 100 for release
                          '3' => "$sDateFrom-$sDateTo",
+                         'n' => 100,  # 10 for testing, 100 for release
+                         'o' => 'o',  # OR of all words
+                         'p' => $sQuery,
+                         # I want to sort by descending relevance, but
+                         # yahoo.com is broken.  the 's' parameter in
+                         # the URL has no meaningful effect.
+
+                         # 's' => '-s',  # sort order
                         };
   $rh->{'search_base_url'} = 'http://search.news.yahoo.com';
   $rh->{'search_base_path'} = '/search/news';
