@@ -1,3 +1,9 @@
+2001-09-07  Kingpin  <mthurn@copper.dulles.tasc.com>
+
+	* test.pl: fix all tests, and add new tests for Japan News
+
+	* lib/WWW/Search/Yahoo/Japan/News.pm: new backend!
+
 2001-08-07  Kingpin  <mthurn@tasc.com>
 
 	* lib/WWW/Search/Yahoo/News/Advanced.pm (native_setup_search): default to OR search

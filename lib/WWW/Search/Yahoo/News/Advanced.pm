@@ -1,5 +1,5 @@
 
-# $Id: Advanced.pm,v 1.3 2001/07/16 20:05:05 mthurn Exp $
+# $Id: Advanced.pm,v 1.4 2001/08/07 16:22:22 mthurn Exp $
 
 =head1 NAME
 
@@ -39,6 +39,9 @@ NOTE that Yahoo only keeps the last 90 days worth of news in its index.
 
 ALSO NOTE that Yahoo will return an ERROR if date_from() is set to
 anything prior to Jan. 1 1999.  This backend does NOT check for that.
+
+News.yahoo.com dies if the unescaped query is longer than 485
+characters or so.  This backend does NOT check for that.
 
 =head1 SEE ALSO
 
