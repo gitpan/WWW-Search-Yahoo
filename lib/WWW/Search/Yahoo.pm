@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 2.34 2003/12/30 04:17:00 Daddy Exp $
+# $Id: Yahoo.pm,v 2.34 2003/12/30 04:17:00 Daddy Exp Daddy $
 
 =head1 NAME
 
@@ -266,8 +266,16 @@ sub parse_tree
   # HTML.  We have to resort to old-fashioned string parsing!
   my $sAll = $tree->as_HTML;
   my @asChunk = split('<big>', $sAll);
-  # Throw out what's before the first <big> tag:
-  shift @asChunk;
+  # For some yahoo engines, look for the result count in the first chunk:
+  my $sChunkCount = shift @asChunk;
+  if (
+      # For Yahoo::China
+      ($sChunkCount =~ m!<b\sclass="yge">([0-9,]+)\s*</b>!i)
+     )
+    {
+    $self->approximate_result_count($1);
+    } # if
+  # The remaining chunks contain search results:
  CHUNK:
   foreach my $sChunk (@asChunk)
     {
@@ -275,7 +283,7 @@ sub parse_tree
     $sChunk =~ s!</span>.*\Z!!;
     print STDERR " +   consider <big> chunk ==$sChunk==\n" if 2 <= $self->{_debug};
     # The first <A> tag contains the URL and title:
-    unless ($sChunk =~ s!\A.*?<a\shref="([^"]+)">(.+?)</a>!!)
+    unless ($sChunk =~ s!\A.*?<a\shref="([^"]+)"[^>]*?>(.+?)</a>!!)
       {
       print STDERR " --- did not find <A> inside <big> chunk\n" if 2 <= $self->{_debug};
       next CHUNK;
@@ -283,7 +291,7 @@ sub parse_tree
     my ($sURL, $sTitle) = ($1, $2);
     print STDERR " +   TITLE == $sTitle\n" if 2 <= $self->{_debug};
     # Delete Yahoo-redirect portion of URL:
-    next CHUNK unless ($sURL =~ s!\A.+?\*-!!);
+    next CHUNK unless ($sURL =~ s!\A.+?\*-?(?=http)!!);
     print STDERR " +   URL   == $sURL\n" if 2 <= $self->{_debug};
     # Ignore Yahoo Directory categories, etc.:
     next CHUNK if $sURL =~ m!(\A|/search/empty/\?)http://dir\.yahoo\.com!;
@@ -313,17 +321,27 @@ sub parse_tree
  TABLE:
     foreach my $oTABLE (reverse @aoTABLE)
       {
-      printf STDERR " + TABLE == %s\n", $oTABLE->as_HTML if 2 <= $self->{_debug};
+      next TABLE unless ref($oTABLE);
+      printf STDERR " + next TABLE == %s\n", $oTABLE->as_HTML if 2 <= $self->{_debug};
       my @aoA = $oTABLE->look_down('_tag' => 'a');
  A:
       foreach my $oA (@aoA)
         {
-        printf STDERR " +   A == %s\n", $oA->as_HTML if 2 <= $self->{_debug};
-        if ($oA->as_text =~ m!\ANext(\s+\d+)?\Z!i)
+        next A unless ref($oA);
+        my $sAhtml = $oA->as_HTML;
+        printf STDERR (" +   next A == %s\n", $sAhtml) if 2 <= $self->{_debug};
+        my $sURL = $oA->attr('href');
+        if (
+            ($oA->as_text =~ m!\ANext(\s+\d+)?\Z!i)
+            ||
+            # I can not type Chinese, nor even cut-and-paste into
+            # Emacs with confidence that the encoding will get screwed
+            # up, so I resort to this:
+            ($sAhtml =~ m!&Iuml;&Acirc;&Ograve;&raquo;&Ograve;&sup3;!i)
+           )
           {
-          my $sURL = $oA->attr('href');
           # Delete Yahoo-redirect portion of URL:
-          $sURL =~ s!\A.+?\*-!!;
+          $sURL =~ s!\A.+?\*?-?(?=http)!!;
           $self->{_next_url} = $self->absurl($self->{'_prev_url'}, $sURL);
           last TABLE;
           } # if

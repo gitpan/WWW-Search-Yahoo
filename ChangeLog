@@ -1,3 +1,11 @@
+2004-02-17  Kingpin  <mthurn@verizon.net>
+
+	* t/china.t: new file
+
+	* lib/WWW/Search/Yahoo/China.pm: new file
+
+	* lib/WWW/Search/Yahoo/Korea.pm: tiny pod fix; make VERSION 3 digits
+
 2004-01-23  Kingpin  <mthurn@verizon.net>
 
 	* t/*.t: call env_proxy() on all WWW::Search objects
