@@ -28,12 +28,9 @@ my $iCountDesc = 0;
 cmp_ok(0, '<', $iCount, 'got any results');
 foreach my $oResult (@ao)
   {
-  like($oResult->url, qr{\Ahttp://},
-       'result URL is http');
-  cmp_ok($oResult->title, 'ne', '',
-         'result Title is not empty');
-  # cmp_ok($oResult->size, 'ne', '',
-  # 'result size is not empty');
+  like($oResult->url, qr{\Ahttp://}, 'result URL is http');
+  cmp_ok($oResult->title, 'ne', '', 'result Title is not empty');
+  # cmp_ok($oResult->size, 'ne', '', 'result size is not empty');
   $iCountDesc++ if ($oResult->description ne '');
   } # foreach
 cmp_ok(0.95, '<', $iCountDesc/$iCount, 'mostly non-empty descriptions');

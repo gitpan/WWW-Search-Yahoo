@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 2.355 2004/05/17 10:57:48 Daddy Exp $
+# $Id: Yahoo.pm,v 2.356 2004/09/11 22:31:01 Daddy Exp $
 
 =head1 NAME
 
@@ -114,7 +114,7 @@ use vars qw( $VERSION $MAINTAINER @ISA );
 use vars qw( $iMustPause );
 
 @ISA = qw( WWW::Search );
-$VERSION = do { my @r = (q$Revision: 2.355 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.356 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 # Thanks to the hard work of Gil Vidals and his team at
@@ -250,10 +250,8 @@ sub parse_tree
   print STDERR " + start, approx_h_c is ==", $self->approximate_hit_count(), "==\n" if (2 <= $self->{_debug});
   if ($self->approximate_hit_count() < 1)
     {
-    # Sometimes the hit count is inside a <DIV> tag:
-    my @aoDIV = $oTree->look_down('_tag' => 'div',
-                                  'class' => 'ygbody',
-                                 );
+    my $rh = $self->_where_to_find_count;
+    my @aoDIV = $oTree->look_down(%$rh);
  DIV_TAG:
     foreach my $oDIV (@aoDIV)
       {
@@ -267,27 +265,6 @@ sub parse_tree
         {
         $self->approximate_result_count($iCount);
         last DIV_TAG;
-        } # if
-      } # foreach DIV_TAG
-    } # if
-  if ($self->approximate_hit_count() < 1)
-    {
-    # Sometimes the hit count is inside a <small> tag:
-    my @aoDIV = $oTree->look_down('_tag' => 'small',
-                                 );
- SMALL_TAG:
-    foreach my $oDIV (@aoDIV)
-      {
-      next unless ref $oDIV;
-      print STDERR " + try SMALL ==", $oDIV->as_HTML if (2 <= $self->{_debug});
-      my $s = $oDIV->as_text;
-      print STDERR " +   TEXT ==$s==\n" if (2 <= $self->{_debug});
-      my $iCount = $self->_string_has_count($s);
-      $iCount =~ tr!,\.!!d;
-      if (0 <= $iCount)
-        {
-        $self->approximate_result_count($iCount);
-        last SMALL_TAG;
         } # if
       } # foreach DIV_TAG
     } # if
@@ -364,11 +341,21 @@ sub parse_tree
   return $hits_found;
   } # parse_tree
 
+sub _where_to_find_count
+  {
+  my %hash = (
+              _tag => 'div',
+              # 'class' => 'ygbody',
+              id => 'yschinfo',
+             );
+  return \%hash;
+  } # _where_to_find_count
+
 sub _string_has_count
   {
   my $self = shift;
   my $s = shift;
-  return $1 if ($s =~ m!\bout\s+of\s+(?:about\s+)?([,0-9]+)!i);
+  return $1 if ($s =~ m!\bof\s+(?:about\s+)?([,0-9]+)!i);
   return -1;
   } # _string_has_count
 

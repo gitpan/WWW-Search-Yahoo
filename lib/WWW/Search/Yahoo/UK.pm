@@ -1,6 +1,6 @@
 # UK.pm
 # by Martin Thurn
-# $Id: UK.pm,v 1.5 2003/12/30 04:19:57 Daddy Exp $
+# $Id: UK.pm,v 1.6 2004/07/24 18:53:48 Daddy Exp $
 
 =head1 NAME
 
@@ -48,14 +48,6 @@ C<WWW::Search::Yahoo> is maintained by Martin Thurn
 THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
 WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-
-=head1 VERSION HISTORY
-
-If it''s not listed here, then it wasn''t a meaningful nor released revision.
-
-=head2 2.01, 2001-03-30
-
-First public release.
 
 =cut
 

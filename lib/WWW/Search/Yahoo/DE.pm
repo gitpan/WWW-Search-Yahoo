@@ -48,14 +48,6 @@ THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
 WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-=head1 VERSION HISTORY
-
-If it''s not listed here, then it wasn''t a meaningful nor released revision.
-
-=head2 1.00, 2003-06-20
-
-First public release.
-
 =cut
 
 #####################################################################
@@ -69,7 +61,7 @@ use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
 
-$VERSION = do { my @r = (q$Revision: 1.4 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 1.6 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub native_setup_search
@@ -87,6 +79,15 @@ sub native_setup_search
   return $self->SUPER::native_setup_search($sQuery, $rh);
   } # native_setup_search
 
+
+sub _where_to_find_count
+  {
+  my %hash = (
+              _tag => 'span',
+              class => 'sml drk',
+             );
+  return \%hash;
+  } # _where_to_find_count
 
 sub _string_has_count
   {

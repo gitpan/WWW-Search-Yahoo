@@ -1,5 +1,5 @@
 
-# $Id: Advanced.pm,v 2.51 2004/03/30 02:28:17 Daddy Exp $
+# $Id: Advanced.pm,v 2.53 2004/09/11 22:30:10 Daddy Exp $
 
 =head1 NAME
 
@@ -62,26 +62,6 @@ THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
 WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-=head1 VERSION HISTORY
-
-If it's not listed here, then it wasn't a meaningful nor released revision.
-
-=head2 2.051, 2004-03-27
-
-overhaul for new webpage format
-
-=head2 2.05, 2003-05-30
-
-overhaul for new webpage format
-
-=head2 2.04, 2002-10-31
-
-overhaul for new webpage format
-
-=head2 2.01, 2001-07-16
-
-First public release.
-
 =cut
 
 #####################################################################
@@ -97,7 +77,7 @@ use WWW::Search::Yahoo;
 use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
-$VERSION = do { my @r = (q$Revision: 2.51 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.53 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub native_setup_search
@@ -164,7 +144,8 @@ sub parse_tree
   my $self = shift;
   my $tree = shift;
   my $hits_found = 0;
-  my @aoFONTcount = $tree->look_down('_tag', 'small',
+  my @aoFONTcount = $tree->look_down('_tag', 'div',
+                                     'class' => 'yschhd',
                                     );
  FONTcount_TAG:
   foreach my $oFONT (@aoFONTcount)
@@ -182,7 +163,7 @@ sub parse_tree
     } # foreach FONT_TAG
 
   my @aoA = $tree->look_down('_tag' => 'a',
-                             'class' => 'rt',
+                             'class' => 'yschttl',
                             );
 A_TAG:
   foreach my $oA (@aoA)

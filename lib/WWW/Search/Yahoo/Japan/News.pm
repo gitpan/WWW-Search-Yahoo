@@ -1,4 +1,4 @@
-# $Id: News.pm,v 1.11 2003/12/30 04:18:21 Daddy Exp $
+# $Id: News.pm,v 2.62 2004/07/24 18:56:53 Daddy Exp $
 
 =head1 NAME
 
@@ -58,29 +58,13 @@ THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
 WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-=head1 VERSION HISTORY
-
-If it''s not listed here, then it wasn''t a meaningful nor released revision.
-
-=head2 2.05, 2003-07-10
-
-tweak for result-count parsing; fix *nix Encode un-compatibility
-
-=head2 2.02, 2001-09-13
-
-bugfix, apparently 2.01 could not load at all!?!
-
-=head2 2.01, 2001-09-07
-
-First release.
-
 =cut
 
 package WWW::Search::Yahoo::Japan::News;
 
 @ISA = qw( WWW::Search WWW::Search::Yahoo );
 
-$VERSION = '2.06';
+$VERSION = do { my @r = (q$Revision: 2.62 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 use Data::Dumper; # for debugging only

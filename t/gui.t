@@ -15,7 +15,7 @@ $iDebug = 0;
 diag("Sending 1-page query to yahoo.com...");
 # This GUI query returns 1 page of results:
 $iDebug = 0;
-&my_test('gui', '"Yendor'.'ian tales demo"', 1, 19, $iDebug);
+&my_test('gui', 'wizr'.'adry', 1, 19, $iDebug);
 MULTI:
 diag("Sending multi-page query to yahoo.com...");
 $iDebug = 0;

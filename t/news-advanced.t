@@ -24,7 +24,8 @@ diag("Sending 1-page query to news.yahoo.com...");
 DEBUG_NOW:
 $iDebug = 0;
 $iDump = 0;
-&my_test('normal', 'Wakayama', 1, 99, $iDebug, $iDump);
+&my_test('normal', 'thurn', 1, 99, $iDebug, $iDump);
+exit 0;
 diag("Sending multi-page query to news.yahoo.com...");
 $iDebug = 0;
 $iDump = 0;

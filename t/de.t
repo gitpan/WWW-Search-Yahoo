@@ -25,10 +25,6 @@ $iDump = 0;
 # This query returns 1 page of results:
 diag("Sending 1-page query to de.yahoo.com...");
 &my_test('normal', 'wiz'.'radry', 1, 99, $iDebug, $iDump);
-cmp_ok(1, '<=', $WWW::Search::Test::oSearch->approximate_result_count,
-       qq{lower-bound approximate_result_count});
-cmp_ok($WWW::Search::Test::oSearch->approximate_result_count, '<=', 99,
-       qq{upper-bound approximate_result_count});
 my @ao = $WWW::Search::Test::oSearch->results();
 cmp_ok(0, '<', scalar(@ao), 'got any results');
 foreach my $oResult (@ao)
@@ -48,8 +44,6 @@ $iDebug = 0;
 $iDump = 0;
 # This query returns MANY pages of results:
 &my_test('normal', "Thurn", 101, undef, $iDebug, $iDump);
-cmp_ok(101, '<=', $WWW::Search::Test::oSearch->approximate_result_count,
-       qq{lower-bound approximate_result_count});
 
 ALL_DONE:
 exit 0;
@@ -67,8 +61,18 @@ sub my_test
   # Same arguments as WWW::Search::Test::count_results()
   my ($sType, $sQuery, $iMin, $iMax, $iDebug, $iPrintResults) = @_;
   my $iCount = &WWW::Search::Test::count_results(@_);
-  cmp_ok($iMin, '<=', $iCount, qq{lower-bound num-hits for query=$sQuery}) if defined $iMin;
-  cmp_ok($iCount, '<=', $iMax, qq{upper-bound num-hits for query=$sQuery}) if defined $iMax;
+  if (defined($iMin))
+    {
+    cmp_ok($iMin, '<=', $iCount, qq{lower-bound num-hits for query=$sQuery}) if defined $iMin;
+    cmp_ok($iMin, '<=', $WWW::Search::Test::oSearch->approximate_result_count,
+           qq{lower-bound approximate_result_count});
+    } # if
+  if (defined($iMax))
+    {
+    cmp_ok($iCount, '<=', $iMax, qq{upper-bound num-hits for query=$sQuery}) if defined $iMax;
+    cmp_ok($WWW::Search::Test::oSearch->approximate_result_count, '<=', $iMax,
+           qq{upper-bound approximate_result_count});
+    } # if
   } # my_test
 
 __END__
