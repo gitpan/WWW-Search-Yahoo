@@ -1,7 +1,7 @@
 use ExtUtils::MakeMaker;
 WriteMakefile(
               'NAME' => 'WWW::Search::Yahoo',
-              'VERSION' => '2.29',
+              'VERSION' => '2.31',
               'PREREQ_PM' => {
                               'HTML::TreeBuilder' => 3,
                               # Jcode is needed for `make test` on Yahoo::Japan::News

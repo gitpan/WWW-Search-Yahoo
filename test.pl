@@ -3,7 +3,7 @@
 
 use ExtUtils::testlib;
 use Jcode;
-use Test::More tests => 20;
+use Test::More tests => 24;
 
 BEGIN { use_ok('WWW::Search') };
 BEGIN { use_ok('WWW::Search::Test', qw( count_results )) };
@@ -42,6 +42,8 @@ $iDebug = 0;
 
 NEWS_ADVANCED_TEST:
 &my_new_engine('Yahoo::News::Advanced');
+# This test returns no results (but we should not get an HTTP error):
+&my_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug);
 # goto DEBUG_NOW;
 $iDebug = 0;
 &my_test('normal', 'Presidio', 1, 99, $iDebug);
@@ -53,11 +55,13 @@ $WWW::Search::Test::oSearch->date_from('2002-10-29');
 $WWW::Search::Test::oSearch->date_to(  '2002-10-30');
 $iDebug = 0;
 $iDump = 0;
-&my_test('normal', '"Star Wars"', 6, 6, $iDebug, $iDump);
+&my_test('normal', '"Star Wars"', 7, 7, $iDebug, $iDump);
 
 JAPAN_NEWS_TEST:
 $iDebug = 0;
 &my_new_engine('Yahoo::Japan::News');
+# This test returns no results (but we should not get an HTTP error):
+&my_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug);
 &my_test('normal', Jcode->new('カエル')->euc, 1, 19, $iDebug, $iDump);
 $iDebug = 0;
 # &my_test('normal', Jcode->new('ホールディングス')->euc, 21, 39, $iDebug, $iDump);
