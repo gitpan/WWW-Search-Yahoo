@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Wm. L. Scheding and Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 1.41 2001/07/16 15:16:45 mthurn Exp $
+# $Id: Yahoo.pm,v 1.41 2001/07/16 15:16:45 mthurn Exp mthurn $
 
 =head1 NAME
 
@@ -254,33 +254,6 @@ sub native_setup_search
   $self->{_debug} = 0 if (!defined($self->{_debug}));
   } # native_setup_search
 
-
-# private
-sub native_retrieve_some
-  {
-  my ($self) = @_;
-  print STDERR " +   Yahoo::native_retrieve_some()\n" if $self->{_debug};
-  # fast exit if already done
-  return undef if (!defined($self->{_next_url}));
-  # If this is not the first page of results, sleep so as to not overload the server:
-  $self->user_agent_delay if 1 < $self->{'_next_to_retrieve'};
-  # get some
-  print STDERR " +   sending request (", $self->{'_next_url'}, ")\n" if $self->{_debug};
-  my $response = $self->http_request('GET', $self->{'_next_url'});
-  $self->{_prev_url} = $self->{_next_url};
-  $self->{'_next_url'} = undef;
-  $self->{response} = $response;
-  if (! $response->is_success)
-    {
-    return undef;
-    } # if
-
-  # Parse the output:
-  my $tree = new HTML::TreeBuilder;
-  $tree->parse($response->content);
-  $tree->eof;
-  return $self->parse_tree($tree);
-  } # native_retrieve_some
 
 sub parse_tree
   {

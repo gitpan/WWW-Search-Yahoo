@@ -1,3 +1,7 @@
+2001-09-13  Kingpin  <mthurn@copper.dulles.tasc.com>
+
+	* lib/WWW/Search/Yahoo/Japan/News.pm: bugfix, and update pod
+
 2001-09-07  Kingpin  <mthurn@copper.dulles.tasc.com>
 
 	* test.pl: fix all tests, and add new tests for Japan News
