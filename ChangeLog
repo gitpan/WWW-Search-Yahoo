@@ -1,3 +1,21 @@
+2003-01-23  Kingpin  <mthurn@carbon>
+
+	* lib/WWW/Search/Yahoo.pm (parse_tree): fix parsing for new yahoo.com page format
+
+2002-12-20  Kingpin  <mthurn@carbon.>
+
+	* lib/WWW/Search/Yahoo.pm (parse_tree): make sure result count is taken from "Web Matches" section
+
+	* lib/WWW/Search/Yahoo/Japan/News.pm (parse_tree): ignore yahoo.co.jp links that look like hit results:
+
+	* lib/WWW/Search/Yahoo.pm (parse_tree): do not follow "next" link if result count is being spoofed
+
+2002-11-08  Kingpin  <mthurn@carbon.>
+
+	* Makefile.PL: add prereq Date::Manip
+
+	* lib/WWW/Search/Yahoo.pm (parse_tree): FIX pattern for result-count integer match
+
 2002-11-01  Kingpin  <mthurn@carbon.>
 
 	* lib/WWW/Search/Yahoo.pm (native_setup_search): new URL

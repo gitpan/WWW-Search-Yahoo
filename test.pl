@@ -2,8 +2,7 @@
 # `make test'. After `make install' it should work as `perl test.pl'
 
 use ExtUtils::testlib;
-use Jcode;
-use Test::More tests => 24;
+use Test::More tests => 25;
 
 BEGIN { use_ok('WWW::Search') };
 BEGIN { use_ok('WWW::Search::Test', qw( count_results )) };
@@ -32,6 +31,7 @@ $iDebug = 0;
 
 GUI_TEST:
 $iDebug = 0;
+&my_new_engine('Yahoo');
 # This GUI query returns 1 page of results:
 $iDebug = 0;
 &my_test('gui', '"Yendor'.'ian tales demo"', 1, 19, $iDebug);
@@ -42,31 +42,38 @@ $iDebug = 0;
 
 NEWS_ADVANCED_TEST:
 &my_new_engine('Yahoo::News::Advanced');
+# goto DEBUG_NOW;
 # This test returns no results (but we should not get an HTTP error):
 &my_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug);
 # goto DEBUG_NOW;
 $iDebug = 0;
-&my_test('normal', 'Presidio', 1, 99, $iDebug);
-DEBUG_NOW:
+&my_test('normal', 'Aomori', 1, 99, $iDebug);
 $iDebug = 0;
 &my_test('normal', 'Japan', 101, undef, $iDebug);
 # goto SKIP_REST;
-$WWW::Search::Test::oSearch->date_from('2002-10-29');
-$WWW::Search::Test::oSearch->date_to(  '2002-10-30');
+DEBUG_NOW:
+$WWW::Search::Test::oSearch->date_from('2003-01-05');
+$WWW::Search::Test::oSearch->date_to(  '2003-01-16');
 $iDebug = 0;
 $iDump = 0;
-&my_test('normal', '"Star Wars"', 7, 7, $iDebug, $iDump);
+&my_test('normal', '"Okinawa"', 1, 9, $iDebug, $iDump);
 
 JAPAN_NEWS_TEST:
 $iDebug = 0;
 &my_new_engine('Yahoo::Japan::News');
 # This test returns no results (but we should not get an HTTP error):
-&my_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug);
-&my_test('normal', Jcode->new('カエル')->euc, 1, 19, $iDebug, $iDump);
 $iDebug = 0;
-# &my_test('normal', Jcode->new('ホールディングス')->euc, 21, 39, $iDebug, $iDump);
-&my_test('normal', Jcode->new('株式')->euc, 41, undef, $iDebug, $iDump);
-
+&my_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug, $iDebug);
+SKIP:
+  {
+  eval 'use Jcode';
+  skip 'because Jcode is not installed', 3 if $@;
+  $iDebug = 0;
+  &my_test('normal', Jcode->new('カエル')->euc, 1, 19, $iDebug, $iDump);
+  $iDebug = 0;
+  # &my_test('normal', Jcode->new('ホールディングス')->euc, 21, 39, $iDebug, $iDump);
+  &my_test('normal', Jcode->new('株式')->euc, 41, undef, $iDebug, $iDump);
+  } # end of SKIP block
 SKIP_REST:
 exit 0;
 

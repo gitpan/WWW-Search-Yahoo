@@ -1,4 +1,4 @@
-# $Id: News.pm,v 1.4 2002/03/29 20:14:56 mthurn Exp mthurn $
+# $Id: News.pm,v 1.7 2002/12/20 22:37:25 mthurn Exp $
 
 =head1 NAME
 
@@ -76,7 +76,7 @@ package WWW::Search::Yahoo::Japan::News;
 
 @ISA = qw( WWW::Search WWW::Search::Yahoo );
 
-$VERSION = '2.03';
+$VERSION = '2.04';
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 use Data::Dumper; # for debugging only
@@ -193,6 +193,10 @@ sub parse_tree
       } # if debug
     my $sURL = $oA->attr('href') || '';
     next A_TAG unless $sURL ne '';
+    $sURL = $self->absurl($self->{'_prev_url'}, $sURL);
+    # Ignore yahoo.co.jp links that look like hit results:
+    my $sSelf = $self->{'search_base_url'};
+    next A_TAG if ($sURL =~ m!\A$sSelf!);
     my $sTitle = $oA->as_text;
     my $sDesc = &strip_tags($oSMALL->as_text);
     my $hit = new WWW::SearchResult;

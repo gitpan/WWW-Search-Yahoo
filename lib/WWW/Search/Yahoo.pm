@@ -1,11 +1,11 @@
 # Yahoo.pm
 # by Wm. L. Scheding and Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 1.48 2002/11/01 15:18:15 mthurn Exp $
+# $Id: Yahoo.pm,v 2.29 2003/01/23 14:04:02 mthurn Exp $
 
 =head1 NAME
 
-WWW::Search::Yahoo - class for searching Yahoo 
+WWW::Search::Yahoo - backend for searching www.yahoo.com
 
 =head1 SYNOPSIS
 
@@ -62,6 +62,14 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 =head1 VERSION HISTORY
 
 If it''s not listed here, then it wasn''t a meaningful nor released revision.
+
+=head2 2.29, 2003-01-23
+
+FIX parsing for new yahoo.com page format
+
+=head2 2.28, 2002-11-08
+
+FIX pattern for single-digit result-count integer match
 
 =head2 2.27, 2002-10-31
 
@@ -166,7 +174,7 @@ package WWW::Search::Yahoo;
 # @EXPORT_OK = qw();
 @ISA = qw( WWW::Search ); # Exporter);
 
-$VERSION = '2.27';
+$VERSION = sprintf("%d.%02d", q$Revision: 2.29 $ =~ /(\d+)\.(\d+)/o);
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 use Carp ();
@@ -260,22 +268,48 @@ sub parse_tree
   my $tree = shift;
   print STDERR " + ::Yahoo got a tree $tree\n" if 2 <= $self->{_debug};
   my $hits_found = 0;
-  # The hit count is inside a <FONT> tag:
-  my @aoFONT = $tree->look_down('_tag', 'font');
- FONT_TAG:
-  foreach my $oFONT (@aoFONT)
+  my $iCountSpoof = 0;
+  my $WS = q{[\t\r\n\240\ ]};
+  # Only try to parse the hit count if we haven't done so already:
+  if ($self->approximate_hit_count < 1)
     {
-    my $s = $oFONT->as_text;
-    print STDERR " + FONT == ", $oFONT->as_HTML if 2 <= $self->{_debug};
-    # print STDERR " +   TEXT == ", $s, "\n" if 2 <= $self->{_debug};
-    if ($s =~ m!\d+-\d+\s+of\s+(\d+)!i)
+    # The hit count is inside a <FONT> tag:
+    my @aoFONT = $tree->look_down('_tag', 'font');
+ FONT_TAG:
+    foreach my $oFONT (@aoFONT)
       {
-      my $iCount = $1;
-      # print STDERR " +   found number $iCount\n" if 2 <= $self->{_debug};
-      $self->approximate_result_count($iCount);
-      last FONT_TAG;
-      } # if
-    } # foreach
+      my $s = $oFONT->as_text;
+      print STDERR " + try FONT == ", $oFONT->as_HTML if 2 <= $self->{_debug};
+      # print STDERR " +   TEXT == ", $s, "\n" if 2 <= $self->{_debug};
+      if ($s =~ m!(\d+)\s*-\s*(\d+)\s+of\s+([,0-9]+)!i)
+        {
+        my ($iStart, $iPageMax, $iCount) = ($1, $2, $3);
+        # Looks like a page range and hit count, but we have to make
+        # sure we're looking at the right section of output:
+        my $oTDmom = $oFONT->parent;
+        next FONT_TAG unless ref $oTDmom;
+        my $oTDaunt = $oTDmom->left;
+        next FONT_TAG unless ref $oTDaunt;
+        my $sSection = $oTDaunt->as_text;
+        next FONT_TAG unless ($sSection =~ m!Web Matches!i);
+        print STDERR " +   found numbers $iStart $iPageMax $iCount\n" if 2 <= $self->{_debug};
+        $iCount =~ s!,!!g;
+        $self->approximate_result_count($iCount);
+        if (
+            # Last hit on this page is NOT a multiple of ten
+            # (i.e. looks like this is the last page of results)...
+            (($iPageMax % 10) ne 0)
+            &&
+            # BUT last hit on this page is NOT the last global hit!?!
+            ($iPageMax < $iCount))
+          {
+          # Yahoo.com is trying to trick us???
+          $iCountSpoof = 1;
+          } # if
+        last FONT_TAG;
+        } # if
+      } # foreach
+    } # if
 
   # Each URL result is in a <LI> tag:
   my @aoLI = $tree->look_down('_tag', 'li');
@@ -290,52 +324,32 @@ sub parse_tree
     next LI unless ref($oA);
     my $sTitle = $oA->as_text;
     print STDERR " +   TITLE == $sTitle\n" if 2 <= $self->{_debug};
-    my $sURLfallback = $oA->attr('href');
+    my $sURL = $oA->attr('href');
     $oA->detach();
     $oA->delete();
-    # The second <font> tag contains the URL:
-    my $sURL;
-    my @aoFONT = $oLI->look_down('_tag', 'font');
-    $oFONT = $aoFONT[1];
-    if (ref($oFONT))
-      {
-      # Delete the "More like this" link if present:
-      my $oA = $oFONT->look_down('_tag', 'a');
-      if (ref $oA)
-        {
-        $oA->detach;
-        $oA->delete;
-        } # if
-      $sURL = $oFONT->as_text;
-      $sURL =~ m!(.)\Z!;
-      # print STDERR "\n + the last char of sURL is ", ord($1), "\n";
-      # exit 88;
-      $sURL =~ s![\240\s\t\r\n\ ]+!!g;
-      $oFONT->detach();
-      $oFONT->delete();
-      }
-    else
-      {
-      # Use the fallback URL:
-      $sURL = $sURLfallback;
-      $sURL =~ s!^.+?\*!!;
-      }
+    $sURL =~ s!^.+?\*!!;
     print STDERR " +   URL   == $sURL\n" if 2 <= $self->{_debug};
     # Ignore Yahoo Directory categories, etc.:
     next LI if $sURL =~ m!(\A|/search/empty/\?)http://dir\.yahoo\.com!;
-    # The text of the LI is the description:
-    my $sDesc = $oLI->as_text;
+    # Delete the FONT tag:
+    my $oFONT = $oLI->look_down('_tag' => 'font');
+    if (ref $oFONT)
+      {
+      $oFONT->detach();
+      $oFONT->delete();
+      } # if
+    # The remaining text of the LI is the description:
+    my $sDesc = $oLI->as_text || '';
     # Chop off extraneous:
-    $sDesc =~ s!More Results From: .*?\Z!!i;
-    $sDesc =~ s!\s?\d+-\d+\sof\s\d+\s\|?\240.*?\Z!!i;
+    $sDesc =~ s!\A$WS*-$WS+!!;
+    $sDesc =~ s!More\s+(Results|sites)\s+(about|From):.*?\Z!!i;
+    # $sDesc =~ s!\s?\d+-\d+\sof\s\d+\s\|?\240.*?\Z!!i;
 
     print STDERR " +   DESC  == $sDesc\n" if 2 <= $self->{_debug};
     my $hit = new WWW::SearchResult;
     $hit->add_url($sURL);
-    $sTitle =~ s!\A[\240\s\t\r\n\ ]+!!;
-    $sTitle =~ s![\240\s\t\r\n\ ]+\Z!!;
-    $sDesc =~ s!\A[\240\s\t\r\n\ ]+!!;
-    $sDesc =~ s![\240\s\t\r\n\ ]+\Z!!;
+    $sTitle = $self->strip($sTitle);
+    $sDesc = $self->strip($sDesc);
     $hit->title($sTitle);
     $hit->description($sDesc);
     push(@{$self->{cache}}, $hit);
@@ -344,30 +358,42 @@ sub parse_tree
     $oLI->detach;
     } # foreach oLI
 
-  # The "next" button is in a table...
-  my @aoTABLE = $tree->look_down('_tag', 'table');
-  # ...but we want the LAST one appearing on the page:
- TABLE:
-  foreach my $oTABLE (reverse @aoTABLE)
+  if (! $iCountSpoof)
     {
-    printf STDERR " + TABLE == %s\n", $oTABLE->as_HTML if 2 <= $self->{_debug};
-    my @aoA = $oTABLE->look_down('_tag', 'a');
- A:
-    foreach my $oA (@aoA)
+    # The "next" button is in a table...
+    my @aoTABLE = $tree->look_down('_tag', 'table');
+    # ...but we want the LAST one appearing on the page:
+ TABLE:
+    foreach my $oTABLE (reverse @aoTABLE)
       {
-      printf STDERR " +   A == %s\n", $oA->as_HTML if 2 <= $self->{_debug};
-      if ($oA->as_text =~ m!Next\s+\d+!i)
+      printf STDERR " + TABLE == %s\n", $oTABLE->as_HTML if 2 <= $self->{_debug};
+      my @aoA = $oTABLE->look_down('_tag', 'a');
+ A:
+      foreach my $oA (@aoA)
         {
-        my $sURL = $oA->attr('href');
-        $sURL =~ tr!\r\n!!d;
-        $self->{_next_url} = $self->absurl($self->{'_prev_url'}, $sURL);
-        last TABLE;
-        } # if
-      } # foreach $oA
-    } # foreach $oTABLE
+        printf STDERR " +   A == %s\n", $oA->as_HTML if 2 <= $self->{_debug};
+        if ($oA->as_text =~ m!Next\s+\d+!i)
+          {
+          my $sURL = $oA->attr('href');
+          $sURL =~ tr!\r\n!!d;
+          $self->{_next_url} = $self->absurl($self->{'_prev_url'}, $sURL);
+          last TABLE;
+          } # if
+        } # foreach $oA
+      } # foreach $oTABLE
+    } # if
   return $hits_found;
   } # parse_tree
 
+
+sub strip
+  {
+  my $self = shift;
+  my $s = shift;
+  $s =~ s!\A[\240\t\r\n\ ]+  !!x;
+  $s =~ s!  [\240\t\r\n\ ]+\Z!!x;
+  return $s;
+  } # strip
 
 1;
 
