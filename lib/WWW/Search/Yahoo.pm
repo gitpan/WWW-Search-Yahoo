@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 2.356 2004/09/11 22:31:01 Daddy Exp $
+# $Id: Yahoo.pm,v 2.359 2004/09/25 01:44:23 Daddy Exp $
 
 =head1 NAME
 
@@ -114,7 +114,7 @@ use vars qw( $VERSION $MAINTAINER @ISA );
 use vars qw( $iMustPause );
 
 @ISA = qw( WWW::Search );
-$VERSION = do { my @r = (q$Revision: 2.356 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.359 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 # Thanks to the hard work of Gil Vidals and his team at
@@ -290,6 +290,7 @@ sub parse_tree
     unshift @aoA, $oA;
     # Strip off the yahoo.com redirect part of the URL:
     $sURL =~ s!\A.*?\*-!!;
+    $sURL =~ s!\Ahttp%3A!http:!i;
     print STDERR " +   cooked  URL is ==$sURL==\n" if (2 <= $self->{_debug});
     # Delete the useless human-readable restatement of the URL (first
     # <EM> tag we come across):
@@ -332,9 +333,12 @@ sub parse_tree
     if ($self->_a_is_next_link($oA))
       {
       my $sURL = $oA->attr('href');
+      printf STDERR " +   raw    next URL ==$sURL==\n" if (2 <= $self->{_debug});
       # Delete Yahoo-redirect portion of URL:
       $sURL =~ s!\A.+?\*?-?(?=http)!!;
+      $sURL =~ s!\Ahttp%3A!http:!i;
       $self->{_next_url} = $self->absurl($self->{'_prev_url'}, $sURL);
+      printf STDERR " +   cooked next URL ==$self->{_next_url}==\n" if (2 <= $self->{_debug});
       last NEXT_A;
       } # if
     } # foreach NEXT_A
@@ -355,6 +359,7 @@ sub _string_has_count
   {
   my $self = shift;
   my $s = shift;
+  # print STDERR " DDD Yahoo::string_has_count($s)?\n";
   return $1 if ($s =~ m!\bof\s+(?:about\s+)?([,0-9]+)!i);
   return -1;
   } # _string_has_count

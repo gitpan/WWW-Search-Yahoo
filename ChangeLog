@@ -1,3 +1,12 @@
+2004-09-24  Kingpin  <mthurn@verizon.net>
+
+	* lib/WWW/Search/Yahoo.pm (parse_tree): fix 'http%3A' in URLs
+
+2004-09-19  Kingpin  <mthurn@verizon.net>
+
+	* lib/WWW/Search/Yahoo/DE.pm (_where_to_find_count): fix tag names
+	(_string_has_count): fix pattern
+
 2004-09-11  Kingpin  <mthurn@verizon.net>
 
 	* lib/WWW/Search/Yahoo/DE.pm (_where_to_find_count): new private method

@@ -61,7 +61,7 @@ use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
 
-$VERSION = do { my @r = (q$Revision: 1.6 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 1.7 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub native_setup_search
@@ -83,8 +83,8 @@ sub native_setup_search
 sub _where_to_find_count
   {
   my %hash = (
-              _tag => 'span',
-              class => 'sml drk',
+              _tag => 'div',
+              id => 'yschinfo',
              );
   return \%hash;
   } # _where_to_find_count
@@ -93,7 +93,8 @@ sub _string_has_count
   {
   my $self = shift;
   my $s = shift;
-  return $1 if ($s =~ m!\bvon\s+(?:ca\.\s+)?([,.0-9]+)!i);
+  # print STDERR " DDD DE::string_has_count($s)?\n";
+  return $1 if ($s =~ m!\bvon\s+(?:ungefähr\s+)?([,.0-9]+)!i);
   return -1;
   } # _string_has_count
 
