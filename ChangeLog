@@ -1,3 +1,11 @@
+2004-01-23  Kingpin  <mthurn@verizon.net>
+
+	* t/*.t: call env_proxy() on all WWW::Search objects
+
+2004-01-18  Kingpin  <mthurn@verizon.net>
+
+	* t/echostar-advanced.t: make most tests TODO because yahoo.com is broken
+
 2003-12-29  Kingpin  <mthurn@verizon.net>
 
 	* lib/WWW/Search/Yahoo/TV/Echostar.pm (parse_tree): fix date parsing for year-end wraparound!

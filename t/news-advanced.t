@@ -43,6 +43,7 @@ sub my_engine
   my $sEngine = shift;
   $WWW::Search::Test::oSearch = new WWW::Search($sEngine);
   ok(ref($WWW::Search::Test::oSearch), "instantiate WWW::Search::$sEngine object");
+  $WWW::Search::Test::oSearch->env_proxy('yes');
   } # my_engine
 
 sub my_test
