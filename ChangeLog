@@ -1,3 +1,11 @@
+2000-09-20
+	
+	* VERSION 2.16 RELEASED
+	
+2000-09-19  Kingpin  <mthurn@tasc.com>
+
+	* Yahoo.pm (native_retrieve_some): fix gui-style results parsing
+
 2000-09-15
 	
 	* VERSION 2.15 RELEASED

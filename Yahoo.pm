@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Wm. L. Scheding and Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 1.32 2000/09/14 16:51:10 mthurn Exp $
+# $Id: Yahoo.pm,v 1.33 2000/09/19 17:33:22 mthurn Exp $
 
 =head1 NAME
 
@@ -68,6 +68,10 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 =head1 VERSION HISTORY
 
 If it''s not listed here, then it wasn''t a meaningful nor released revision.
+
+=head2 2.16, 2000-09-19
+
+fix gui-style results parsing & new URL
 
 =head2 2.15, 2000-09-14
 
@@ -136,7 +140,7 @@ require Exporter;
 @EXPORT_OK = qw();
 @ISA = qw(WWW::Search Exporter);
 
-$VERSION = '2.15';
+$VERSION = '2.16';
 $MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
 
 use Carp ();
@@ -230,20 +234,22 @@ sub native_retrieve_some
   # get some
   my $urlCurrent = $self->{_next_url};
   print STDERR " +   sending request ($urlCurrent)\n" if $self->{_debug};
-  my($response) = $self->http_request('GET', $urlCurrent);
+  my $response = $self->http_request('GET', $urlCurrent);
   $self->{response} = $response;
-  if (!$response->is_success) 
+  if (! $response->is_success)
     {
     return undef;
     }
   
   $self->{'_next_url'} = undef;
-  print STDERR " +   got response\n" if $self->{_debug};
+  print STDERR " +   got response, base= >>>", $response->base(), "<<<\n" if $self->{_debug};
+  $urlCurrent = $response->base;
   # parse the output
-  my ($HEADER, $HITS, $INSIDE, $TRAILER) = qw(HE HI IY TR);
+  my ($HEADER, $HITS, $INSIDE, $GUI2, $TRAILER) = qw(HE HI IY G2 TR);
   my $hits_found = 0;
   my $state = $HEADER;
   my $hit;
+  my $sDescription = '';
  LINE_OF_INPUT:
   foreach ($self->split_lines($response->content()))
     {
@@ -319,21 +325,35 @@ sub native_retrieve_some
       }
 
     elsif ($state eq $HITS &&
-           m!^<li><a\shref=\"([^\"]+)">(.+?)</a>\s-\s(.+?)<br>.+<p>$!i)
+           m!^<LI><A\sHREF=\"([^\"]+)">(.+?)</A><BR>(.+?)<br>$!i)
       {
       # Actual line of input is:
-      # <li><a href="http://www.savvydiner.com/columbus/sapporowind">Sapporo Wind Page</a> - <b>Restaurant</b> info and reservations for the BEST places in Chicago, San Francisco, Seattle, Vancouver and other cities.<br><i>--http://www.savvydiner.com/<b>columbus</b>/sapporowind</i><p>      
+      # <LI><A HREF="http://srd.yahoo.com/goo/sushi+restaurant+columbus+ohio/1/*http://www.eastontowncenter.com/hamam1.htm"><b>Restaurant</b> Hama Menu at Easton Town Center in <b>Columbus</b> </A><BR><SMALL>...Center, 160 Easton Town Center, <b>Columbus</b>, <b>Ohio</b> 43219 (614)...<br>
       print STDERR "gui hit line\n" if 2 <= $self->{_debug};
       my ($sURL, $sTitle, $sDesc) = ($1,$2,$3);
-      if (defined($hit)) 
+      if (defined($hit))
         {
+        $hit->description($sDescription);
+        $sDescription = '';
         push(@{$self->{cache}}, $hit);
         } # if
       $hit = new WWW::SearchResult;
+      # Delete Yahoo-redirect portion of URL:
+      $sURL =~ s!^.+?/\*!!;
       $hit->add_url($sURL);
       $hit->title(strip_tags($sTitle));
-      $hit->description(strip_tags($sDesc));
+      $sDescription .= strip_tags($sDesc);
       $hits_found++;
+      $state = $GUI2;
+      next LINE_OF_INPUT;
+      }
+    elsif ($state eq $GUI2)
+      {
+      # Actual line of input is
+      # ...Menu: <b>Restaurant</b> Hama (614) 418-7600 Home Directory Store Listings...
+      print STDERR "gui description line\n" if 2 <= $self->{_debug};
+      $sDescription .= strip_tags($_);
+      $state = $HITS;
       next LINE_OF_INPUT;
       }
 
@@ -440,22 +460,22 @@ sub native_retrieve_some
       print STDERR " + next URL is ", $self->{'_next_url'}, "\n" if 2 <= $self->{_debug};
       $state = $TRAILER;
       }
- 
-    else 
+
+    else
       {
       print STDERR "didn't match\n" if 2 <= $self->{_debug};
       };
     } # foreach
-  if ($state ne $TRAILER) 
+  if ($state ne $TRAILER)
     {
     # Reached end of page without seeing "Next" button
     $self->{_next_url} = undef;
     } # if
-  if (defined($hit)) 
+  if (defined($hit))
     {
+        $hit->description($sDescription);
     push(@{$self->{cache}}, $hit);
     } # if
-  
   return $hits_found;
   } # native_retrieve_some
 
