@@ -2,7 +2,7 @@
 use inc::Module::Install;
 
 name('WWW-Search-Yahoo');
-version(2.399);
+version(2.401);
 
 author('Martin Thurn <mthurn@cpan.org>');
 license('perl');
@@ -19,9 +19,9 @@ requires('URI');
 requires('URI::Escape');
 # We need the version of WWW::Search that calls need_to_delay():
 requires('WWW::Search' => 2.523);
-# We need the version of WWW::Search::Test where count_results() takes
-# a hashref as argument 7:
-requires('WWW::Search::Test' => 2.26);
+# We need the version of WWW::Search::Test that exports its tm_
+# functions:
+build_requires('WWW::Search::Test' => 2.265);
 
 check_nmake();      # check and download nmake.exe for Win32
 &Makefile->write;

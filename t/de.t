@@ -6,7 +6,7 @@ BEGIN { use_ok('WWW::Search::Test') };
 BEGIN { use_ok('WWW::Search::Yahoo') };
 BEGIN { use_ok('WWW::Search::Yahoo::DE') };
 
-&my_engine('Yahoo::DE');
+&tm_new_engine('Yahoo::DE');
 my $iDebug;
 my $iDump = 0;
 
@@ -17,14 +17,14 @@ my $iDump = 0;
 diag("Sending 0-page query to de.yahoo.com...");
 $iDebug = 0;
 $iDump = 0;
-&my_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug, $iDump);
+&tm_run_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug, $iDump);
 # goto MULTI_TEST;
 TEST_NOW:
 $iDebug = 0;
 $iDump = 0;
 # This query returns 1 page of results:
 diag("Sending 1-page query to de.yahoo.com...");
-&my_test('normal', 'wiz'.'radry', 1, 99, $iDebug, $iDump);
+&tm_run_test('normal', 'wiz'.'radry', 1, 99, $iDebug, $iDump);
 my @ao = $WWW::Search::Test::oSearch->results();
 cmp_ok(0, '<', scalar(@ao), 'got any results');
 foreach my $oResult (@ao)
@@ -43,36 +43,9 @@ diag("Sending multi-page query to de.yahoo.com...");
 $iDebug = 0;
 $iDump = 0;
 # This query returns MANY pages of results:
-&my_test('normal', "Thurn", 101, undef, $iDebug, $iDump);
+&tm_run_test('normal', "Thurn", 101, undef, $iDebug, $iDump);
 
 ALL_DONE:
 exit 0;
-
-sub my_engine
-  {
-  my $sEngine = shift;
-  $WWW::Search::Test::oSearch = new WWW::Search($sEngine);
-  ok(ref($WWW::Search::Test::oSearch), "instantiate WWW::Search::$sEngine object");
-  $WWW::Search::Test::oSearch->env_proxy('yes');
-  } # my_engine
-
-sub my_test
-  {
-  # Same arguments as WWW::Search::Test::count_results()
-  my ($sType, $sQuery, $iMin, $iMax, $iDebug, $iPrintResults) = @_;
-  my $iCount = &WWW::Search::Test::count_results(@_);
-  if (defined($iMin))
-    {
-    cmp_ok($iMin, '<=', $iCount, qq{lower-bound num-hits for query=$sQuery}) if defined $iMin;
-    cmp_ok($iMin, '<=', $WWW::Search::Test::oSearch->approximate_result_count,
-           qq{lower-bound approximate_result_count});
-    } # if
-  if (defined($iMax))
-    {
-    cmp_ok($iCount, '<=', $iMax, qq{upper-bound num-hits for query=$sQuery}) if defined $iMax;
-    cmp_ok($WWW::Search::Test::oSearch->approximate_result_count, '<=', $iMax,
-           qq{upper-bound approximate_result_count});
-    } # if
-  } # my_test
 
 __END__
