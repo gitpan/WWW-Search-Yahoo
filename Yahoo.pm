@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Wm. L. Scheding and Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 1.37 2000/11/10 15:13:13 mthurn Exp $
+# $Id: Yahoo.pm,v 1.38 2000/12/15 14:13:04 mthurn Exp $
 
 =head1 NAME
 
@@ -68,6 +68,10 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 =head1 VERSION HISTORY
 
 If it''s not listed here, then it wasn''t a meaningful nor released revision.
+
+=head2 2.21, 2000-12-15
+
+clean up URL parsing (yahoo.com added text to it)
 
 =head2 2.19, 2000-11-10
 
@@ -152,7 +156,7 @@ require Exporter;
 @EXPORT_OK = qw();
 @ISA = qw(WWW::Search Exporter);
 
-$VERSION = '2.19';
+$VERSION = '2.21';
 $MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
 
 use Carp ();
@@ -300,7 +304,18 @@ sub native_retrieve_some
     $oFONT = $aoFONT[-1];
     if (ref($oFONT))
       {
+      # Delete the "More like this" link if present:
+      my $oA = $oFONT->look_down('_tag', 'a');
+      if (ref $oA)
+        {
+        $oA->detach;
+        $oA->delete;
+        } # if
       $sURL = $oFONT->as_text;
+      $sURL =~ m!(.)\Z!;
+      # print STDERR "\n + the last char of sURL is ", ord($1), "\n";
+      # exit 88;
+      $sURL =~ s![\240\s\t\r\n\ ]+!!g;
       $oFONT->detach();
       $oFONT->delete();
       }
