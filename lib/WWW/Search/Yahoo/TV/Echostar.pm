@@ -1,14 +1,14 @@
-# $Id: TV.pm,v 1.0 2003-07-14 21:49:52-04 kingpin Exp kingpin $
+# $Id: Echostar.pm,v 1.3 2003-07-27 21:15:36-04 kingpin Exp kingpin $
 
 =head1 NAME
 
-WWW::Search::Yahoo - backend for searching www.yahoo.com
+WWW::Search::Yahoo::TV::Echostar - backend for searching tv.yahoo.com
 
 =head1 SYNOPSIS
 
   use WWW::Search;
-  my $oSearch = new WWW::Search('Yahoo');
-  my $sQuery = WWW::Search::escape_query("sushi restaurant Columbus Ohio");
+  my $oSearch = new WWW::Search('Yahoo::TV::Echostar');
+  my $sQuery = WWW::Search::escape_query("Bai Ling");
   $oSearch->native_query($sQuery);
   while (my $oResult = $oSearch->next_result())
     print $oResult->url, "\n";
@@ -16,14 +16,15 @@ WWW::Search::Yahoo - backend for searching www.yahoo.com
 =head1 DESCRIPTION
 
 This class is a Yahoo specialization of L<WWW::Search>.  It handles
-making and interpreting Yahoo searches F<http://www.yahoo.com>.
+making and interpreting Yahoo TV searches F<http://tv.yahoo.com>.
 
 This class exports no public interface; all interaction should
 be done through L<WWW::Search> objects.
 
 =head1 NOTES
 
-The default search is: Yahoo's web-based index (not Directory).
+This backend does a basic keyword search against the Echostar (Dish
+Network) East Coast channel lineup.
 
 =head1 SEE ALSO
 
@@ -31,15 +32,11 @@ To make new back-ends, see L<WWW::Search>.
 
 =head1 BUGS
 
-Please tell the maintainer if you find any!
+Please tell the author if you find any!
 
 =head1 AUTHOR
 
-As of 1998-02-02, C<WWW::Search::Yahoo> is maintained by Martin Thurn
-(mthurn@cpan.org).
-
-C<WWW::Search::Yahoo> was originally written by Wm. L. Scheding,
-based on C<WWW::Search::AltaVista>.
+Martin Thurn C<mthurn@cpan.org>
 
 =head1 LEGALESE
 
@@ -47,13 +44,16 @@ THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
 WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-
 =cut
 
 package WWW::Search::Yahoo::TV::Echostar;
 
 use Carp ();
 use Data::Dumper;  # for debugging only
+use Date::Manip;
+# We don't care what timezone we're in, we only use Date::Manip to
+# convert date formats:
+$ENV{'TZ'} ||= 'US/Eastern';
 use HTML::TreeBuilder;
 use WWW::Search qw( generic_option strip_tags );
 use WWW::Search::Result;
@@ -63,7 +63,7 @@ use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 
 @ISA = qw( WWW::Search );
-$VERSION = sprintf("%d.%02d", q$Revision: 1.0 $ =~ /(\d+)\.(\d+)/o);
+$VERSION = sprintf("%d.%02d", q$Revision: 1.3 $ =~ /(\d+)\.(\d+)/o);
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 use constant DEBUG_SETUP => 0;
@@ -186,12 +186,13 @@ sub parse_tree
           print STDERR " +   episode==$sEpisode==\n" if (2 <= $self->{_debug});
           print STDERR " +   channel==$sChannel==\n" if (2 <= $self->{_debug});
           print STDERR " +   datetime=$sDTG==\n" if (2 <= $self->{_debug});
+          my $sDate = &UnixDate($sDTG, '%A, %b %E at %H:%M');
+          my $sDesc = "$sDate on $sChannel";
+          $sTitle .= qq{ ("$sEpisode")} if ($sEpisode ne '');
           my $oHit = new WWW::Search::Result;
           $oHit->add_url($sURL);
           $oHit->title($sTitle);
-          $oHit->company($sChannel);
-          $oHit->location($sDTG);
-          $oHit->source($sEpisode);
+          $oHit->description($sDesc);
           push(@{$self->{cache}}, $oHit);
           $iHits++;
           next A_TAG;

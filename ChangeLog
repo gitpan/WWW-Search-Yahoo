@@ -1,3 +1,7 @@
+2003-07-27  Kingpin  <mthurn@megapipe.net>
+
+	* lib/WWW/Search/Yahoo/TV/Echostar.pm: move episode title to after show name
+
 2003-07-14  Kingpin  <mthurn@megapipe.net>
 
 	* lib/WWW/Search/Yahoo/TV/Echostar.pm: new backend

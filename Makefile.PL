@@ -2,7 +2,7 @@
 use inc::Module::Install;
 
 name('WWW::Search::Yahoo');
-version(2.34);
+version(2.35);
 
 author('Martin Thurn <mthurn@cpan.org>');
 license('perl');
