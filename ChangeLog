@@ -1,3 +1,7 @@
+2003-05-14  Kingpin  <mthurn@megapipe.net>
+
+	* lib/WWW/Search/Yahoo.pm (parse_tree): fix parsing for new yahoo.com page format
+
 2003-01-23  Kingpin  <mthurn@carbon>
 
 	* lib/WWW/Search/Yahoo.pm (parse_tree): fix parsing for new yahoo.com page format

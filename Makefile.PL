@@ -1,17 +1,16 @@
 use ExtUtils::MakeMaker;
 WriteMakefile(
               'NAME' => 'WWW::Search::Yahoo',
-              'VERSION' => '2.32',
+              'VERSION' => '2.33',
               'PREREQ_PM' => {
                               'Date::Manip' => 0,
                               'HTML::TreeBuilder' => 3,
                               # Jcode is needed for `make test` on Yahoo::Japan::News
                               'Jcode' => 0,
                               'Test::More' => 0,
-                              # We need the version of WWW::Search
-                              # that sets store_comments() on its
-                              # HTML::TreeBuilder object:
-                              'WWW::Search' => 2.36,
+                              # We need the version of WWW::Search::Test
+                              # that exports _test_more functions
+                              'WWW::Search::Test' => 2.23,
                              },
              );
 

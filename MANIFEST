@@ -1,5 +1,5 @@
 ChangeLog
-MANIFEST
+MANIFEST			This list of files
 Makefile.PL
 README
 lib/WWW/Search/Yahoo.pm
@@ -7,4 +7,7 @@ lib/WWW/Search/Yahoo/Japan/News.pm
 lib/WWW/Search/Yahoo/Korea.pm
 lib/WWW/Search/Yahoo/News/Advanced.pm
 lib/WWW/Search/Yahoo/UK.pm
-test.pl
+t/basic.t
+t/gui.t
+t/japan-news.t
+t/news-advanced.t
