@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 2.34 2003/12/30 04:17:00 Daddy Exp Daddy $
+# $Id: Yahoo.pm,v 2.352 2004/03/13 14:31:48 Daddy Exp $
 
 =head1 NAME
 
@@ -106,12 +106,13 @@ use HTML::TreeBuilder;
 use WWW::Search qw( generic_option strip_tags );
 use WWW::SearchResult;
 use URI;
+use URI::Escape;
 
 use strict;
 use vars qw( $VERSION $MAINTAINER @ISA );
 
 @ISA = qw( WWW::Search );
-$VERSION = sprintf("%d.%02d", q$Revision: 2.34 $ =~ /(\d+)\.(\d+)/o);
+$VERSION = do { my @r = (q$Revision: 2.352 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub gui_query
@@ -292,7 +293,9 @@ sub parse_tree
     print STDERR " +   TITLE == $sTitle\n" if 2 <= $self->{_debug};
     # Delete Yahoo-redirect portion of URL:
     next CHUNK unless ($sURL =~ s!\A.+?\*-?(?=http)!!);
-    print STDERR " +   URL   == $sURL\n" if 2 <= $self->{_debug};
+    print STDERR " +   raw URL == $sURL\n" if 2 <= $self->{_debug};
+    $sURL = uri_unescape($sURL);
+    print STDERR " +   cooked URL == $sURL\n" if 2 <= $self->{_debug};
     # Ignore Yahoo Directory categories, etc.:
     next CHUNK if $sURL =~ m!(\A|/search/empty/\?)http://dir\.yahoo\.com!;
     # Delete all remaining <A> tags:

@@ -1,5 +1,5 @@
 
-# $Id: Advanced.pm,v 1.12 2003/12/30 04:18:40 Daddy Exp $
+# $Id: Advanced.pm,v 2.7 2004/03/29 01:39:43 Daddy Exp Daddy $
 
 =head1 NAME
 
@@ -51,10 +51,6 @@ To make new back-ends, see L<WWW::Search>.
 
 Please tell the maintainer if you find any!
 
-=head1 TESTING
-
-There are no tests defined for this module.
-
 =head1 AUTHOR
 
 C<WWW::Search::Yahoo::News::Advanced> is maintained by Martin Thurn
@@ -69,6 +65,10 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 =head1 VERSION HISTORY
 
 If it''s not listed here, then it wasn''t a meaningful nor released revision.
+
+=head2 2.007, 2004-03-27
+
+overhaul for new webpage format
 
 =head2 2.05, 2003-05-30
 
@@ -97,8 +97,7 @@ use WWW::Search::Yahoo;
 use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
-
-$VERSION = '2.05';
+$VERSION = do { my @r = (q$Revision: 2.7 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub native_setup_search
@@ -160,7 +159,7 @@ sub native_setup_search
   } # native_setup_search
 
 
-sub preprocess_results_page
+sub preprocess_results_page_UNUSED
   {
   my $self = shift;
   my $s = shift;
@@ -187,7 +186,7 @@ sub preprocess_results_page
   } # preprocess_results_page
 
 
-sub native_retrieve_some
+sub native_retrieve_some_UNUSED
   {
   my $self = shift;
   # printf STDERR (" +   %s::native_retrieve_some()\n", __PACKAGE__) if $self->{_debug};
@@ -216,6 +215,7 @@ sub native_retrieve_some
   # Pre-process the output:
   my $sPage = $self->preprocess_results_page($response->content);
   # ABOVE WAS COPIED FROM WWW::Search::native_retrieve_some()
+  print STDERR " +   cooked results page ==========$sPage==========\n" if (5 < $self->{_debug});
   # Parse the output:
   my $hits_found = 0;
   my @asLine = $self->split_lines($sPage);
@@ -270,7 +270,7 @@ sub native_retrieve_some
   return $hits_found;
   } # native_retrieve_some
 
-sub lookfor
+sub lookfor_UNUSED
   {
   my $self = shift;
   my ($sPattern, $ras) = @_;
@@ -283,14 +283,12 @@ sub lookfor
   } # lookfor
 
 
-sub parse_tree_UNUSED
+sub parse_tree
   {
   my $self = shift;
   my $tree = shift;
   my $hits_found = 0;
-  my @aoFONTcount = $tree->look_down('_tag', 'font',
-                                     'face' => 'arial',
-                                     'size' => '-1',
+  my @aoFONTcount = $tree->look_down('_tag', 'small',
                                     );
  FONTcount_TAG:
   foreach my $oFONT (@aoFONTcount)
@@ -298,7 +296,7 @@ sub parse_tree_UNUSED
     my $s = $oFONT->as_text;
     print STDERR " + FONTcount == ", $oFONT->as_HTML if 2 <= $self->{_debug};
     # print STDERR " +   TEXT == ", $s, "\n" if 2 <= $self->{_debug};
-    if ($s =~ m!\d+\s*-\s*\d+\s+of\s+(\d+)!)
+    if ($s =~ m!\d+\s*-\s*\d+\s+of\s+(?:about\s+)?(\d+)!)
       {
       my $iCount = $1;
       # print STDERR " +   found number $iCount\n" if 2 <= $self->{_debug};
@@ -307,69 +305,35 @@ sub parse_tree_UNUSED
       } # if
     } # foreach FONT_TAG
 
-  # Each URL result is in a <FONT size=-1> tag:
-  # <font face="arial" size="-1"><a href="http://story.news.yahoo.com/news?tmpl=story&amp;u=/ap/20021030/ap_on_en_mo/neeson_royal_2">Neeson Nervous About Royal Honor</a></font> <font face="arial" size="-2">(AP)</font><br><font face="arial" size="-1"> ...&quot;<b>Star Wars</b>: Episode I: The Phantom Menace.... <br>- <small><i> Oct 30 7:09 AM ET </i></small> </font>
-  my @aoFONT = $tree->look_down('_tag' => 'font',
-                                'size' => '-1',
-                               );
-FONT_TAG:
-  foreach my $oFONT (@aoFONT)
+  my @aoA = $tree->look_down('_tag' => 'a',
+                             'class' => 'rt',
+                            );
+A_TAG:
+  foreach my $oA (@aoA)
     {
-    my $sPrice = '';
-    printf STDERR "\n + FONT == %s", $oFONT->as_HTML if 2 <= $self->{_debug};
-    my $oAtitle = $oFONT->look_down('_tag', 'a');
-    next FONT_TAG unless ref($oAtitle);
-    my $sURL = $oAtitle->attr('href');
-    next FONT_TAG unless defined($sURL);
-    next FONT_TAG unless ($sURL ne '');
-    next FONT_TAG if $sURL =~ m!search\.yahoo\.com!;
+    printf STDERR "\n + A == %s", $oA->as_HTML if 2 <= $self->{_debug};
+    my $sMouseOver = $oA->attr('onmouseover');
+    next A_TAG unless ($sMouseOver =~ m!window\.status='(.+)'!);
+    my $sURL = $1;
+    next A_TAG unless defined($sURL);
+    next A_TAG unless ($sURL ne '');
     print STDERR " +   URL   == $sURL\n" if 2 <= $self->{_debug};
-    # In order to make it easier to parse, make sure everything is an object!
-    $oFONT->parent->objectify_text;
-    # Siblings contain more info.
-    my @aoSib = $oFONT->right;
-    # Next tag contains source:
-    my $oFONTsource = &skip_text_elements(\@aoSib);
-    # Bail if there are no more siblings:
-    next FONT_TAG unless ref($oFONTsource);
-    # Look for price of premium article:
-    if (defined($oFONTsource->attr('color')) && ($oFONTsource->attr('color') eq 'red'))
-      {
-      $oFONTsource->deobjectify_text;
-      $sPrice = $oFONTsource->as_text;
-      printf STDERR " +   FONTprice == %s", $oFONTsource->as_HTML if 2 <= $self->{_debug};
-      $oFONTsource = &skip_text_elements(\@aoSib);
-      } # if
-    printf STDERR " +   FONTsource == %s", $oFONTsource->as_HTML if 2 <= $self->{_debug};
-    my $oBR = &skip_text_elements(\@aoSib);
-    next FONT_TAG unless ref($oBR);
-    printf STDERR " +   BR == %s", $oBR->as_HTML if 2 <= $self->{_debug};
-    my $oFONTdesc = &skip_text_elements(\@aoSib);
-    next FONT_TAG unless ref($oFONTdesc);
-    printf STDERR " +   FONTdesc == %s", $oFONTdesc->as_HTML if 2 <= $self->{_debug};
-
-    # The only <i> tag contains the date...
-    my $oI = $oFONTdesc->look_down('_tag', 'i');
-    # ...and we only need to look at <P> which contains a date:
-    next FONT_TAG unless ref($oI);
-    printf STDERR " +   I == %s", $oI->as_HTML if 2 <= $self->{_debug};
-    $oI->deobjectify_text;
-    my $sDate = $oI->as_text;
-    # delete this <I> tag so the description is easy to get:
-    $oI->detach;
-    $oI->delete;
-
-    # The (remaining) text of the P is the description:
-    $oFONTdesc->deobjectify_text;
-    my $sDesc = &strip_tags($oFONTdesc->as_text);
-    # Delete junk off end of description:
-    $sDesc =~ s!\s+-\s+\Z!!;
-    # Add price if present:
-    $sDesc .= qq{ [$sPrice]} if ($sPrice ne '');
-    print STDERR " +   DESC  == $sDesc\n" if 2 <= $self->{_debug};
-    $oAtitle->deobjectify_text;
-    my $sTitle = $oAtitle->as_text;
+    my $sTitle = $oA->as_text;
     print STDERR " +   TITLE == $sTitle\n" if 2 <= $self->{_debug};
+    # In order to make it easier to parse, make sure everything is an object!
+    my $oLI = $oA->parent;
+    next A_TAG unless ref($oLI);
+    $oA->detach;
+    $oA->delete;
+    my $oEM = $oLI->look_down('_tag' => 'em');
+    next A_TAG unless ref($oEM);
+    my $sEM = $oEM->as_text;
+    my ($sSource, $sDate) = split(/[\s\240]-[\s\240]/, $sEM);
+    $oEM->detach;
+    $oEM->delete;
+    # The (remaining) text of the LI is the description:
+    my $sDesc = &strip_tags($oLI->as_text);
+    print STDERR " +   DESC  == $sDesc\n" if 2 <= $self->{_debug};
     my $hit = new WWW::Search::Result;
     $hit->add_url($sURL);
     $hit->title($sTitle);
@@ -378,20 +342,16 @@ FONT_TAG:
     push(@{$self->{cache}}, $hit);
     $self->{'_num_hits'}++;
     $hits_found++;
-    # Delete this <FONT> (to make it quicker to find the "Next" link)
-    $oFONT->detach;
-    $oFONT->delete;
     } # foreach oFONT
 
-  $tree->deobjectify_text;
   # The "next" link is a plain old <A>:
-  my @aoA = $tree->look_down('_tag', 'a');
+  @aoA = $tree->look_down('_tag', 'a');
 A_TAG:
   foreach my $oA (@aoA)
     {
     printf STDERR " + A == %s\n", $oA->as_HTML if 2 <= $self->{_debug};
     # <a href="http://search.news.yahoo.com/search/news?p=Japan&amp;b=21"><b>Next 20 &gt;</b></a>
-    if ($oA->as_text =~ m!Next\s+\d+!i)
+    if ($oA->as_text eq 'Next')
       {
       $self->{_next_url} = $HTTP::URI_CLASS->new_abs($oA->attr('href'), $self->{'_prev_url'});
       last A_TAG;
@@ -402,7 +362,7 @@ A_TAG:
   } # parse_tree
 
 
-sub skip_text_elements
+sub skip_text_elements_UNUSED
   {
   my $ra = shift;
   my $o;
@@ -422,43 +382,3 @@ sub skip_text_elements
 1;
 
 __END__
-
-as of 2003-10:
-
-http://search.news.yahoo.com/search/news/?adv=1&p=Wakayama&ei=UTF-8&c=news&o=a&s=&n=100&2=&3=
-
-older version:
-
-http://search.news.yahoo.com/search/news?p=george+lucas&s=&n=10&o=&2=&3=05/05/01-05/15/01
-
-Actual pre-processed result:
-
-<a href="http://story.news.yahoo.com/news?tmpl=story&u=/ap/20030522/ap_on_re_as/everest_50th_anniversary_11">
-Dozens Head to Mount Everest's Summit
-</a>
-<a href="http://story.news.yahoo.com/news?tmpl=story&u=/ap/20030522/ap_on_re_as/everest_50th_anniversary_11" target=awindow>
-<img src="http://us.i1.yimg.com/us.yimg.com/i/us/search/bn/newwin_1.gif" height="11" width="11" border="0" align="middle" vspace="1" hspace="4" alt="Open this result in new window">
-</a>
-<br>
-<div class= timedate >
-<span class=provtimedate>
- AP  - 
-</span>
- May 22  9:25 AM 
-</div>
-...Miura, a native of the northern Japanese city of Aomori, began his skiing career in 1962 and won acclaim eight years later by becoming the first person...
-<br>
-In 
-<a href="http://news.yahoo.com/">
-Yahoo! News
-</a>
- > 
-<a href="http://news.yahoo.com/news?tmpl=index2&cid=721">
-World
-</a>
- > 
-<a href="http://news.yahoo.com/news?tmpl=index2&cid=516">
-AP
-</a>
-<br>
-<p>
