@@ -8,7 +8,7 @@ use ExtUtils::testlib;
 # Change 1..1 below to 1..last_test_to_print .
 # (It may become useful if the test is moved to ./t subdirectory.)
 
-BEGIN { $| = 1; print "1..6\n"; }
+BEGIN { $| = 1; print "1..7\n"; }
 END {print "not ok 1\n" unless $loaded;}
 use WWW::Search::Yahoo;
 $loaded = 1;
@@ -65,7 +65,7 @@ print STDERR "\n\n\n\n" if $debug;
 MULTI_TEST:
 # This query returns MANY pages of results:
 $iTest++;
-$sQuery = 'pok','emon';
+$sQuery = 'pok'.'emon';
 $oSearch->native_query(
                        WWW::Search::escape_query($sQuery),
                       { 'search_debug' => $debug, },
@@ -103,7 +103,7 @@ print "ok $iTest\n";
 
 # This GUI query returns 2 pages of results:
 $iTest++;
-$sQuery = 'ko'.'ngpang';
+$sQuery = '"Shel'.'agh Fra'.'ser"';
 $oSearch->gui_query(
                     WWW::Search::escape_query($sQuery),
                       { 'search_debug' => $debug, },
@@ -112,9 +112,9 @@ $oSearch->maximum_to_retrieve(40);
 @aoResults = $oSearch->results();
 $iResults = scalar(@aoResults);
 # print STDERR " + got $iResults GUI results for $sQuery\n";
-if (($iResults < 21) || (39 < $iResults))
+if (($iResults < 21))
   {
-  print STDERR " --- got $iResults GUI results for '$sQuery', but expected 21..39\n";
+  print STDERR " --- got $iResults GUI results for '$sQuery', but expected 21..\n";
   print STDOUT 'not ';
   }
 print "ok $iTest\n";
