@@ -1,3 +1,10 @@
+2001-12-24  Kingpin  <mthurn@copper.dulles.tasc.com>
+
+	* lib/WWW/Search/Yahoo.pm (gui_query): FIXED for not passing debug argument(s)
+	(parse_tree): fix for slightly changed output format
+
+	* lib/WWW/Search/Yahoo/News/Advanced.pm (parse_tree): handle new output format
+
 2001-09-13  Kingpin  <mthurn@copper.dulles.tasc.com>
 
 	* lib/WWW/Search/Yahoo/Japan/News.pm: bugfix, and update pod

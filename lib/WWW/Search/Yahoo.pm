@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Wm. L. Scheding and Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 1.41 2001/07/16 15:16:45 mthurn Exp mthurn $
+# $Id: Yahoo.pm,v 1.43 2001/12/24 16:24:16 mthurn Exp $
 
 =head1 NAME
 
@@ -62,6 +62,10 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 =head1 VERSION HISTORY
 
 If it''s not listed here, then it wasn''t a meaningful nor released revision.
+
+=head2 2.24, 2001-12-24
+
+fix for slightly changed output format
 
 =head2 2.23, 2001-07-16
 
@@ -158,7 +162,7 @@ package WWW::Search::Yahoo;
 # @EXPORT_OK = qw();
 @ISA = qw( WWW::Search ); # Exporter);
 
-$VERSION = '2.23';
+$VERSION = '2.24';
 $MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
 
 use Carp ();
@@ -172,19 +176,16 @@ sub gui_query
   {
   # actual URL as of 2000-03-27 is
   # http://search.yahoo.com/bin/search?p=sushi+restaurant+Columbus+Ohio
-  my ($self, $sQuery) = (shift, shift);
+  my ($self, $sQuery, $rh) = @_;
   $self->{'_options'} = {
                          'p' => $sQuery,
                          # 'hc' => 0,
                          # 'hs' => 0,
                         };
   # print STDERR " +   Yahoo::gui_query() is calling native_query()...\n";
-  return $self->native_query($sQuery,
-                               {
-                                'search_base_url' => 'http://search.yahoo.com',
-                                'search_base_path' => '/bin/search',
-                               },
-                             @_);
+  $rh->{'search_base_url'} = 'http://search.yahoo.com';
+  $rh->{'search_base_path'} = '/bin/search';
+  return $self->native_query($sQuery, $rh);
   } # gui_query
 
 
@@ -249,9 +250,8 @@ sub native_setup_search
   # Finally, figure out the url.
   $self->{'_next_url'} = $self->{'search_base_url'} . $self->{'search_base_path'} .'?'. $self->hash_to_cgi_string($rhOptions);
 
-  $self->{_debug} = $self->{'search_debug'};
+  $self->{_debug} = $self->{'search_debug'} || 0;
   $self->{_debug} = 2 if ($self->{'search_parse_debug'});
-  $self->{_debug} = 0 if (!defined($self->{_debug}));
   } # native_setup_search
 
 
@@ -268,8 +268,7 @@ sub parse_tree
     my $s = $oFONT->as_text;
     print STDERR " + FONT == ", $oFONT->as_HTML if 2 <= $self->{_debug};
     # print STDERR " +   TEXT == ", $s, "\n" if 2 <= $self->{_debug};
-    if (($s =~ m!found!i) &&
-        ($s =~ m!(\d+)\s+(?:pages?|results?|sites?)!i))
+    if ($s =~ m!\d+-\d+\s+of\s+(\d+)!i)
       {
       my $iCount = $1;
       # print STDERR " +   found number $iCount\n" if 2 <= $self->{_debug};
@@ -284,6 +283,8 @@ sub parse_tree
   foreach my $oLI (@aoLI)
     {
     printf STDERR " + LI == %s\n", $oLI->as_HTML if 2 <= $self->{_debug};
+    #  + LI == <li><p><font face="arial"><big> <a href="http://srd.yahoo.com/goo/%22Shelagh+Fraser%22/20/T=1009210773/F=191de59def3b5fd43b17abdedd4397ad/*http://home.fuse.net/mckee/addresses.htm"> Star Wars Stars' Addresses</a> </big><br><b>...</b> Denis Lawson c/o Star Wars Fan Club PO Box 111000 Aurora, CO 80042. Aunt Beru<br><b>Shelagh</b> <b>Fraser</b> c/o Ken McReddie Ltd. 91 Regent St. London W1R 7TB, ENGLAND <b>...</b><br><font color=006600>http://home.fuse.net/mckee/addresses.htm</font> </font><p><table><tr><td height=4></td></tr></table><table bgcolor="e3e9f8" border=0 cellpadding=2 cellspacing=0 width="100%"><tr><td align="right" nowrap><font face="arial" size="-1">1-20 of 318 |&nbsp;<b><a href="http://google.yahoo.com/bin/query?\np=%22Shelagh+Fraser%22&amp;b=21&amp;hc=0&amp;hs=0&amp;xargs=">Next 20 &gt;</a></b> </font></td></tr></table><table><tr><td height=6></td></tr></table>
+
     # The first <a> tag contains the title:
     my $oA = $oLI->look_down('_tag', 'a');
     next LI unless ref($oA);
@@ -292,10 +293,10 @@ sub parse_tree
     my $sURLfallback = $oA->attr('href');
     $oA->detach();
     $oA->delete();
-    # The last <font> tag contains the URL:
+    # The second <font> tag contains the URL:
     my $sURL;
     my @aoFONT = $oLI->look_down('_tag', 'font');
-    $oFONT = $aoFONT[-1];
+    $oFONT = $aoFONT[1];
     if (ref($oFONT))
       {
       # Delete the "More like this" link if present:
@@ -332,6 +333,8 @@ sub parse_tree
     push(@{$self->{cache}}, $hit);
     $self->{'_num_hits'}++;
     $hits_found++;
+    $oLI->delete;
+    $oLI->detach;
     } # foreach oLI
 
   # The "next" button is in a table:
@@ -345,9 +348,11 @@ sub parse_tree
     foreach my $oA (@aoA)
       {
       printf STDERR " +   A == %s\n", $oA->as_HTML if 2 <= $self->{_debug};
-      if ($oA->as_text =~ m!next!i)
+      if ($oA->as_text =~ m!Next\s+\d+!i)
         {
-        $self->{_next_url} = $HTTP::URI_CLASS->new_abs($oA->attr('href'), $self->{'_prev_url'});
+        my $sURL = $oA->attr('href');
+        $sURL =~ tr!\r\n!!d;
+        $self->{_next_url} = $self->absurl($self->{'_prev_url'}, $sURL);
         last TABLE;
         } # if
       } # foreach $oA
@@ -366,3 +371,11 @@ http://ink.yahoo.com/bin/query?p=sushi+restaurant+Columbus+Ohio&hc=0&hs=0
 
 Advanced search:
 http://ink.yahoo.com/bin/query?o=1&p=LSAm&d=y&za=or&h=c&g=0&n=20
+
+==== actual next link from page:
+
+http://google.yahoo.com/bin/query?p=%22Shelagh+Fraser%22&b=21&hc=0&hs=0&xargs=
+
+==== _next_url :
+
+http://google.yahoo.com/bin/query?%0Ap=%22Shelagh+Fraser%22&b=21&hc=0&hs=0&xargs=

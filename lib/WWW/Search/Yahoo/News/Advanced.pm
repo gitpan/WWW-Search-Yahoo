@@ -1,5 +1,5 @@
 
-# $Id: Advanced.pm,v 1.4 2001/08/07 16:22:22 mthurn Exp $
+# $Id: Advanced.pm,v 1.5 2001/12/24 15:49:02 mthurn Exp $
 
 =head1 NAME
 
@@ -89,7 +89,7 @@ use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
 
-$VERSION = '2.02';
+$VERSION = '2.03';
 $MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
 
 sub native_setup_search
@@ -189,6 +189,7 @@ P_TAG:
     my $sTitle = $oA->as_text;
     print STDERR " +   TITLE == $sTitle\n" if 2 <= $self->{_debug};
     my $sURL = $oA->attr('href');
+    next P_TAG if $sURL =~ m!search\.yahoo\.com!;
     # Delete this <A> so it doesn't get added to the description:
     $oA->detach;
     $oA->delete;
@@ -216,7 +217,8 @@ A_TAG:
   foreach my $oA (@aoA)
     {
     printf STDERR " + A == %s\n", $oA->as_HTML if 2 <= $self->{_debug};
-    if ($oA->as_text =~ m!Next\s+\d+\s+Matches!i)
+    # <a href="http://search.news.yahoo.com/search/news?p=Japan&amp;b=21"><b>Next 20 &gt;</b></a>
+    if ($oA->as_text =~ m!Next\s+\d+\s+!i)
       {
       $self->{_next_url} = $HTTP::URI_CLASS->new_abs($oA->attr('href'), $self->{'_prev_url'});
       last A_TAG;

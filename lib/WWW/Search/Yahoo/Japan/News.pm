@@ -1,4 +1,4 @@
-# $Id: News.pm,v 1.2 2001/09/13 19:17:12 mthurn Exp $
+# $Id: News.pm,v 1.3 2001/09/21 13:55:51 mthurn Exp $
 
 =head1 NAME
 
@@ -130,9 +130,10 @@ sub parse_tree
         } # if
       } # else
     } # foreach
-  # Each result is in a <P>, but we can not parse those <P>s because
-  # the first one is mal-formed (contains a <BASE> tag which is not
-  # legal inside a <P>).  So, just look for <A> with a <SMALL> sibling.
+  # Each result is in a <P>, but HTML::Parser can not parse those <P>s
+  # because the first one is mal-formed (contains a <BASE> tag which
+  # is not legal inside a <P>).  So, just look for <A> with a <SMALL>
+  # sibling.
   my @aoA = $tree->look_down('_tag', 'a');
  A_TAG:
   foreach my $oA (@aoA)
@@ -151,7 +152,7 @@ sub parse_tree
     if (2 <= $self->{_debug})
       {
       my $s = $oSMALL->as_HTML;
-      print STDERR " +   SMALL ===$s===\n";
+      print STDERR " +   SMALL ===$s===\n\n";
       } # if debug
     my $sURL = $oA->attr('href') || '';
     next A_TAG unless $sURL ne '';
