@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Wm. L. Scheding and Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 1.36 2000/10/02 14:19:05 mthurn Exp $
+# $Id: Yahoo.pm,v 1.37 2000/11/10 15:13:13 mthurn Exp $
 
 =head1 NAME
 
@@ -68,6 +68,10 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 =head1 VERSION HISTORY
 
 If it''s not listed here, then it wasn''t a meaningful nor released revision.
+
+=head2 2.19, 2000-11-10
+
+rewrote parser using HTML::TreeBuilder
 
 =head2 2.18, 2000-10-02
 
@@ -148,12 +152,13 @@ require Exporter;
 @EXPORT_OK = qw();
 @ISA = qw(WWW::Search Exporter);
 
-$VERSION = '2.18';
+$VERSION = '2.19';
 $MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
 
 use Carp ();
-use WWW::Search(qw( generic_option strip_tags ));
-require WWW::SearchResult;
+use HTML::TreeBuilder;
+use WWW::Search qw( generic_option strip_tags );
+use WWW::SearchResult;
 use URI;
 
 sub gui_query
@@ -206,7 +211,7 @@ sub native_setup_search
                            'h' => 'c',  # web sites
                            'g' => 0,
                            'n' => $self->{_hits_per_page},
-                           'b' => $self->{_next_to_retrieve},
+                           'b' => $self->{_next_to_retrieve}-1,
                           };
     } # if
   my $rhOptions = $self->{'_options'};
@@ -235,6 +240,7 @@ sub native_retrieve_some
   
   # fast exit if already done
   return undef if (!defined($self->{_next_url}));
+  my $hits_found = 0;
   
   # If this is not the first page of results, sleep so as to not overload the server:
   $self->user_agent_delay if 1 < $self->{'_next_to_retrieve'};
@@ -247,294 +253,100 @@ sub native_retrieve_some
   if (! $response->is_success)
     {
     return undef;
-    }
+    } # if
   
   $self->{'_next_url'} = undef;
-  print STDERR " +   got response, base= >>>", $response->base(), "<<<\n" if $self->{_debug};
-  $urlCurrent = $response->base;
-  # parse the output
-  my ($HEADER, $HITS, $DESC, $INSIDE, $GUI2, $TRAILER) = qw(HE HI DE IY G2 TR);
-  my $hits_found = 0;
-  my $state = $HEADER;
-  my $hit;
-  my $sDescription = '';
-  my @asPatt = qw( <p> <dd><li> );
- LINE_OF_INPUT:
-  foreach ($self->split_lines(\@asPatt, $response->content()))
+
+  # Parse the output:
+  my $tree = new HTML::TreeBuilder;
+  $tree->parse($response->content);
+  $tree->eof;
+
+  # The hit count is inside a <FONT> tag:
+  my @aoFONT = $tree->look_down('_tag', 'font');
+ FONT_TAG:
+  foreach my $oFONT (@aoFONT)
     {
-    next if m@^$@; # short circuit for blank lines
-    print STDERR " + $state ===$_=== " if 2 <= $self->{'_debug'};
-    if (9 < $self->{'_debug'})
+    my $s = $oFONT->as_text;
+    print STDERR " + FONT == ", $oFONT->as_HTML if 2 <= $self->{_debug};
+    # print STDERR " +   TEXT == ", $s, "\n" if 2 <= $self->{_debug};
+    if (($s =~ m!found!i) &&
+        ($s =~ m!(\d+)\s+(?:pages?|results?|sites?)!i))
       {
-      if ($state eq $HITS && m@\074a\shref=\"[^"]+\">(.......)@i)
-        {
-        print STDERR " + EIGHT BYTES AFTER href are: ",  sprintf "\\%.3lo"x length($1), unpack("C*", $1), "\n";
-        } # if
-      } # if debug
-    if (($state eq $HITS) &&
-        (m!<a\shref=\"?([^\">]+)"?>Next\s\d+\smatches</a>!i
-         ||
-         m!<a\shref=\"?([^\">]+)"?>Next\Z!i))
-      {
-      # Actual line of input is:
-      # <a href="/bin/query?p=sushi+restaurant+Columbus+Ohio&b=21&hc=0&hs=0">Next 20 matches</a></font></center>
-      print STDERR "gui next line\n" if 2 <= $self->{_debug};
-      $self->set_next_url($1, $urlCurrent);
-      $state = $TRAILER;
-      next LINE_OF_INPUT;
-      }
-    if ($state eq $HITS &&
-        m!<a\shref=\"([^\"]+)">Go\sTo\sWeb\sPage\sMatches</a>!i)
-      {
-      # Actual line of input is:
-      # <a href="http://ink.yahoo.com/bin/query?p=toyota+camry&hc=1&hs=5">Go To Web Page Matches</a>
-      print STDERR "gui 1 next line\n" if 2 <= $self->{_debug};
-      $self->set_next_url($1, $urlCurrent);
-      $state = $TRAILER;
-      next LINE_OF_INPUT;
-      }
-
-    elsif ($state eq $HITS &&
-           m@Inside\sYahoo!\sMatches@ )
-      {
-      # Actual line of input is:
-      # <font face=arial><b>Inside Yahoo! Matches</b></font><p>
-      print STDERR "inside yahoo line\n" if 2 <= $self->{_debug};
-      $state = $INSIDE;
-      }
-    elsif ($state eq $INSIDE)
-      {
-      my @asHits = split/<br\076/;
-      foreach my $sLine (@asHits)
-        {
-        print STDERR " + $state ===$sLine=== " if 2 <= $self->{'_debug'};
-        if ($sLine =~ m!href=\"(.+?)\"!i)
-          {
-          print STDERR "hit" if 2 <= $self->{'_debug'};
-          if (defined($hit))
-            {
-            print STDERR " +   add to cache\n" if 2 <= $self->{'_debug'};
-            $hit->description($sDescription);
-            $sDescription = '';
-            push(@{$self->{cache}}, $hit);
-            } # if
-          $hit = new WWW::SearchResult;
-          $hit->add_url($1);
-          $hit->title(strip_tags($sLine));
-          $hits_found++;
-          } # if
-        print STDERR "\n" if 2 <= $self->{'_debug'};
-        } # foreach
-      $state = $HITS;
-      }
-
-    elsif ($state eq $HITS &&
-           m!^<A\sHREF=\"([^\"]+)">(.+?)</A><BR>(.+?)<br>$!i)
-      {
-      # Actual line of input is:
-      # <LI><A HREF="http://srd.yahoo.com/goo/sushi+restaurant+columbus+ohio/1/*http://www.eastontowncenter.com/hamam1.htm"><b>Restaurant</b> Hama Menu at Easton Town Center in <b>Columbus</b> </A><BR><SMALL>...Center, 160 Easton Town Center, <b>Columbus</b>, <b>Ohio</b> 43219 (614)...<br>
-      # <LI><A HREF="http://srd.yahoo.com/goo/Martin+Thurn/1/*http://www.zdnet.com/tlkbck/comment/22/0,7056,93574-509835,00.html">ZDNet: News: Talkback</A><BR><SMALL>...ZDNet Japan ZDNet China Name: <b>martin</b> <b>thurn</b> Email:...<br>
-      print STDERR "gui hit line\n" if 2 <= $self->{_debug};
-      my ($sURL, $sTitle, $sDesc) = ($1,$2,$3);
-      if (ref($hit))
-        {
-        print STDERR " +   add to cache\n" if 2 <= $self->{'_debug'};
-        $hit->description($sDescription);
-        $sDescription = '';
-        push(@{$self->{cache}}, $hit);
-        } # if
-      $hit = new WWW::SearchResult;
-      # Delete Yahoo-redirect portion of URL:
-      $sURL = substr($sURL, 1+index($sURL, '*'));
-      $hit->add_url($sURL);
-      $hit->title(strip_tags($sTitle));
-      $sDescription .= strip_tags($sDesc);
-      $hits_found++;
-      $state = $GUI2;
-      next LINE_OF_INPUT;
-      }
-    elsif ($state eq $GUI2)
-      {
-      # Actual line of input is
-      # ...Menu: <b>Restaurant</b> Hama (614) 418-7600 Home Directory Store Listings...
-      print STDERR "gui description line\n" if 2 <= $self->{_debug};
-      $sDescription .= strip_tags($_);
-      $state = $HITS;
-      next LINE_OF_INPUT;
-      }
-
-    elsif ($state eq $HITS && s@^\s-\s(.+?)(\074/UL>|\074LI>)@$2@i)
-      {
-      # Actual line of input is:
-      #  - Links to many other <b>Star</b> <b>Wars</b> sites as well as some cool original stuff.<LI><A HREF="http://www.geocities.com/Hollywood/Hills/3650/"><b>Star</b> <b>Wars</b>: A New Hope for the Internet</A>
-      print STDERR "description line\n" if 2 <= $self->{_debug};
-      $sDescription .= strip_tags($1);
-      # Don't change state, and don't go to the next line! The <LI> on
-      # this line is the next hit!
-      }
-
-    if ($state eq $HITS && m=^(.*?)\074BR>\074cite>=)
-      {
-      # Actual line of input is:
-      # 
-      print STDERR "citation line\n" if 2 <= $self->{_debug};
-      $sDescription .= strip_tags($1);
-      $state = $HITS;
-      } # CITATION line
-
-    if ($state eq $HEADER && m|^and\s\074b>(\d+)\074/b>\s*$|i)
-      {
-      # Actual line of input is:
-      # and <b>130</b> 
       my $iCount = $1;
-      print STDERR "header line ($iCount)\n" if 2 <= $self->{_debug};
+      # print STDERR " +   found number $iCount\n" if 2 <= $self->{_debug};
       $self->approximate_result_count($iCount);
-      $state = $HITS;
-      }
-    elsif (($state eq $HEADER) && (m|\074b>\(\d+-\d+\s+of\s+(\d+)\)\074/b>|i
-                                   ||
-                                   m!^(\d+)\)</small></b></font>!i))
-      {
-      print STDERR "header count line\n" if 2 <= $self->{_debug};
-      # Actual line of input:
-      # &nbsp; <FONT SIZE="-1"><b>(1-20 of 801)</b></FONT></center><ul>
-      $self->approximate_result_count($1);
-      $state = $HITS;
-      }
-    elsif ($state eq $HEADER && m|\(\d+&nbsp;-&nbsp;\d+&nbsp;/&nbsp;(\d+)\)|)
-      {
-      print STDERR "header count line (korea)\n" if 2 <= $self->{_debug};
-      # Actual line of input from Yahoo Korea:
-      # <CENTER><FONT SIZE="+1"><B>$B"="i"B"N"H"0(B $B"2"M"="x"2"c"2"|(B &nbsp; <FONT SIZE="-1">(1&nbsp;-&nbsp;84&nbsp;/&nbsp;114)</FONT></B></FONT></CENTER>
-      $self->approximate_result_count($1);
-      $state = $HITS;
-      }
-    elsif ($state eq $HEADER && m|^\074CENTER>Found\s\074B>\d+\074/B>\sCategory\sand\s\074B>(\d+)\074/B>\sSite\sMatches\sfor|i)
-      {
-      # Actual line of input is:
-      # <CENTER>Found <B>15</B> Category and <B>1297</B> Site Matches for
-      print STDERR "header line\n" if 2 <= $self->{_debug};
-      $self->approximate_result_count($1);
-      $state = $HITS;
-      }
-    elsif ($state eq $HEADER && m|^\074UL>|i)
-      {
-      $state = $HITS;
-      }
+      last FONT_TAG;
+      } # if
+    } # foreach
 
-    elsif ($state eq $HITS &&
-           m!\A(?:<LI>)?<a\s+href=\"([^\"]+)\">(.+?)</a>(.*?)\Z!i)
+  # Each URL result is in a <LI> tag:
+  my @aoLI = $tree->look_down('_tag', 'li');
+ LI:
+  foreach my $oLI (@aoLI)
+    {
+    printf STDERR " + LI == %s\n", $oLI->as_HTML if 2 <= $self->{_debug};
+    # The first <a> tag contains the title:
+    my $oA = $oLI->look_down('_tag', 'a');
+    next LI unless ref($oA);
+    my $sTitle = $oA->as_text;
+    print STDERR " +   TITLE == $sTitle\n" if 2 <= $self->{_debug};
+    my $sURLfallback = $oA->attr('href');
+    $oA->detach();
+    $oA->delete();
+    # The last <font> tag contains the URL:
+    my $sURL;
+    my @aoFONT = $oLI->look_down('_tag', 'font');
+    $oFONT = $aoFONT[-1];
+    if (ref($oFONT))
       {
-      # Actual lines of input are:
-      # <table border=0 cellpadding=0 cellspacing=0><tr><td height=5></td></tr></table><dd><li><a href="http://srd.yahoo.com/srst/17056637/olympic+athlete/12/130/*http://www.specialolympicsva.com/">Special <b>Olympic</b>s Virginia</a>
-      # We do not necessarily want to return the Yahoo Directory entry for existing results:
-      # <dt><font face=arial size=-1>Regional > U.S. States > Virginia > Community and Culture  &gt; <a href="http://srd.yahoo.com/srctg/17056637/olympic+athlete/12/130/*http://dir.yahoo.com/Regional/U_S__States/Virginia/Community_and_Culture/Disabilities/">Disabilities</a>
-      # <dt><font face=arial size=-1>Recreation > Sports > Track and Field > <b>Athlete</b>s  &gt; <a href="http://srd.yahoo.com/srctg/34360467/olympic+athlete/3/130/*http://dir.yahoo.com/Recreation/Sports/Track_and_Field/Athletes/Fosbury__Dick/">Fosbury, Dick</a>
-      # <UL TYPE=disc><LI><A HREF="http://events.yahoo.com/Arts_and_Entertainment/Movies_and_Films/Star_Wars_Series/">Yahoo! Net Events: <b>Star</b> <b>Wars</b> Series</A>
-      #  - Links to many other <b>Star</b> <b>Wars</b> sites as well as some cool original stuff.<LI><A HREF="http://www.geocities.com/Hollywood/Hills/3650/"><b>Star</b> <b>Wars</b>: A New Hope for the Internet</A>
-      # <LI><A HREF="http://srd.yahoo.com/goo/Martin+Thurn/2/*http://theoryx5.uwinnipeg.ca/CPAN/by-author/MTHURN.html">CPAN modules for MTHURN [<b>Martin</b> <b>Thurn</b>]</A><BR><SMALL>...modules for MTHURN [<b>Martin</b> <b>Thurn</b>] Bundle-WWW-Search in...
-      my ($sURL, $sTitle, $sDesc) = ($1, $2, $3);
-      if ($sURL =~ m/^news:/)
-        {
-        print STDERR "ignore 'news:' url line\n" if 2 <= $self->{_debug};
-        next LINE_OF_INPUT;
-        } # if
-      if ($sURL =~ m!search\.yahoo\.com/search!)
-        {
-        print STDERR "ignore yahoo search url line\n" if 2 <= $self->{_debug};
-        next LINE_OF_INPUT;
-        } # if
-      print STDERR "hit url line\n" if 2 <= $self->{_debug};
-      if (ref($hit))
-        {
-        print STDERR " +   add to cache\n" if 2 <= $self->{'_debug'};
-        $hit->description($sDescription);
-        $sDescription = '';
-        push(@{$self->{cache}}, $hit);
-        }
-      $hit = new WWW::SearchResult;
-      # Delete Yahoo-redirect portion of URL:
-      $sURL = substr($sURL, 1+index($sURL, '*'));
-      $hit->add_url($sURL);
-      $hits_found++;
-      $hit->title(strip_tags($sTitle));
-      $sDescription .= strip_tags($sDesc);
-      $state = $DESC;
-      $state = $GUI2 if m!<SMALL>!i;
-      next LINE_OF_INPUT;
-      }
- 
-    elsif ($state eq $HITS && m@\074a\shref=\"([^"]+)\">(Next|\264\331\300\275)\s*\d+@i)
-      {
-      print STDERR "next line\n" if 2 <= $self->{_debug};
-      # Actual line of input from Yahoo Korea:
-      # <a href="/bin/search?&d=y&n=84&o=1&p=moon&za=or&hc=3&hs=114&h=s&b=85">$B"6"["B"?(B 30$B"2"5"B"I(B $B"2"M"="x"2"c"2"|(B</a>
-      # There is a "next" button on this page, therefore there are
-      # indeed more results for us to go after next time.
-      $self->set_next_url($1, $urlCurrent);
-      $state = $TRAILER;
-      }
-    elsif ($state eq $HITS && m!\A<dt><font.+?>(.+)</font>\Z!i)
-      {
-      # Actual line of input:
-      # <dt><font face=arial size=-1>Recreation > Sports > Events > International Games > <b>Olympic</b> Games > History > 1998 Winter Games - Nagano </font>
-      print STDERR "leading description\n" if 2 <= $self->{_debug};
-      # This description goes with the NEXT hit:
-      if (ref($hit))
-        {
-        print STDERR " +   add to cache\n" if 2 <= $self->{'_debug'};
-        $hit->description($sDescription);
-        push(@{$self->{cache}}, $hit);
-        $sDescription = '';
-        undef $hit;
-        } # if
-      $sDescription .= &strip_tags($1) . '; ';
-      }
-
-    elsif ($state eq $DESC &&
-          m!\A\s+-\s+(.+)\Z!)
-      {
-      # Actual line of input is:
-      #  - <b>Olympic</b> shot put thrower.
-      print STDERR " - description\n" if 2 <= $self->{_debug};
-      $sDescription .= strip_tags($1);
-      $state = $HITS;
-      }
-    elsif ($state eq $DESC && m!\A<P>\Z!i)
-      {
-      print STDERR "no description\n" if 2 <= $self->{_debug};
-      $state = $HITS;
+      $sURL = $oFONT->as_text;
+      $oFONT->detach();
+      $oFONT->delete();
       }
     else
       {
-      print STDERR "didn't match\n" if 2 <= $self->{_debug};
-      };
-    } # foreach
-  if ($state ne $TRAILER)
-    {
-    # Reached end of page without seeing "Next" button
-    $self->{_next_url} = undef;
-    } # if
-  if (ref($hit))
-    {
-    $hit->description($sDescription);
+      # Use the fallback URL:
+      $sURL = $sURLfallback;
+      $sURL =~ s!^.+?\*!!;
+      }
+    print STDERR " +   URL   == $sURL\n" if 2 <= $self->{_debug};
+    # Ignore Yahoo Directory categories, etc.:
+    next LI if $sURL =~ m!^http://dir\.yahoo\.com!;
+    # The text of the LI is the description:
+    my $sDesc = $oLI->as_text;
+    print STDERR " +   DESC  == $sDesc\n" if 2 <= $self->{_debug};
+    my $hit = new WWW::SearchResult;
+    $hit->add_url($sURL);
+    $hit->title($sTitle);
+    $hit->description($sDesc);
     push(@{$self->{cache}}, $hit);
-    } # if
+    $self->{'_num_hits'}++;
+    $hits_found++;
+    } # foreach oLI
+
+  # The "next" button is in a table:
+  my @aoTABLE = $tree->look_down('_tag', 'table');
+ TABLE:
+  foreach my $oTABLE (@aoTABLE)
+    {
+    printf STDERR " + TABLE == %s\n", $oTABLE->as_HTML if 2 <= $self->{_debug};
+    my @aoA = $oTABLE->look_down('_tag', 'a');
+ A:
+    foreach my $oA (@aoA)
+      {
+      printf STDERR " +   A == %s\n", $oA->as_HTML if 2 <= $self->{_debug};
+      if ($oA->as_text =~ m!next!i)
+        {
+        $self->{_next_url} = $HTTP::URI_CLASS->new_abs($oA->attr('href'), $urlCurrent);
+        last TABLE;
+        } # if
+      } # foreach $oA
+    } # foreach $oTABLE
+  $tree->delete;
   return $hits_found;
   } # native_retrieve_some
 
-
-sub set_next_url
-  {
-  my $self = shift;
-  my ($sURL, $urlCurrent) = @_;
-  # print STDERR " +   sURL       = $sURL\n";
-  # print STDERR " +   urlCurrent = $urlCurrent\n";
-  $self->{'_next_to_retrieve'} += $self->{'_hits_per_page'};
-  $self->{'_next_to_retrieve'} = $1 if $sURL =~ m/b=(\d+)/;
-  $self->{'_next_url'} = $HTTP::URI_CLASS->new_abs($sURL, $urlCurrent);
-  print STDERR " + next URL is ", $self->{'_next_url'}, "\n" if 2 <= $self->{_debug};
-  } # set_next_url
 
 1;
 
