@@ -2,7 +2,7 @@
 use inc::Module::Install;
 
 name('WWW-Search-Yahoo');
-version(2.393);
+version(2.394);
 
 author('Martin Thurn <mthurn@cpan.org>');
 license('perl');
@@ -17,11 +17,8 @@ recommends('Jcode');
 build_requires('Test::More');
 requires('URI');
 requires('URI::Escape');
-# We need the version of WWW::Search that allows empty query string:
-requires('WWW::Search' => 2.42);
-# We need the version of WWW::Search that has its own
-# native_setup_search():
-requires('WWW::Search' => 2.43);
+# We need the version of WWW::Search that calls need_to_delay():
+requires('WWW::Search' => 2.523);
 # We need the version of WWW::Search::Test where count_results() takes
 # a hashref as argument 7:
 requires('WWW::Search::Test' => 2.26);

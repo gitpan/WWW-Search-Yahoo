@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 2.352 2004/03/13 14:31:48 Daddy Exp $
+# $Id: Yahoo.pm,v 2.352 2004/03/13 14:31:48 Daddy Exp Daddy $
 
 =head1 NAME
 
@@ -103,22 +103,39 @@ package WWW::Search::Yahoo;
 use Carp ();
 use Data::Dumper;  # for debugging only
 use HTML::TreeBuilder;
-use WWW::Search qw( generic_option strip_tags );
+# We must have version 
+use WWW::Search;
 use WWW::SearchResult;
 use URI;
 use URI::Escape;
 
 use strict;
 use vars qw( $VERSION $MAINTAINER @ISA );
+use vars qw( $iMustPause );
 
 @ISA = qw( WWW::Search );
 $VERSION = do { my @r = (q$Revision: 2.352 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
+# Thanks to the hard work of Gil Vidals and his team at
+# positionresearch.com, we know the following: In early 2004,
+# yahoo.com implemented new robot-blocking tactics that look for
+# frequent requests from the same client IP.  One way around these
+# blocks is to slow down and randomize the timing of our requests.  We
+# therefore insert a random sleep before every request except the
+# first one.  This variable is equivalent to a "first-time" flag for
+# this purpose:
+$iMustPause = 0;
+
+sub need_to_delay
+  {
+  # print STDERR " + this is Yahoo::need_to_delay()\n";
+  return $iMustPause;
+  } # need_to_delay
+
+
 sub gui_query
   {
-  # actual URL as of 2000-03-27 is
-  # http://search.yahoo.com/bin/search?p=sushi+restaurant+Columbus+Ohio
   my ($self, $sQuery, $rh) = @_;
   $self->{'_options'} = {
                          'p' => $sQuery,
@@ -194,15 +211,26 @@ sub native_setup_search
   } # native_setup_search
 
 
+sub user_agent_delay
+  {
+  my $self = shift;
+  my $iSecs = int(30 + rand(30));
+  print STDERR " + sleeping $iSecs seconds, to make yahoo.com think we're NOT a robot...\n" if ($self->{search_debug} < 0);
+  sleep($iSecs);
+  } # user_agent_delay
+
+
 sub preprocess_results_page
   {
   my $self = shift;
   my $sPage = shift;
+  # goto PRP_DEBUG;
   # Delete the <BASE> tag that appears BEFORE the <html> tag (because
   # it causes HTML::TreeBuilder to NOT be able to parse it!)
   $sPage =~ s!<BASE\s[^>]+>!!;
   return $sPage;
   # For debugging only.  Print the page contents and abort.
+ PRP_DEBUG:
   print STDERR $sPage;
   exit 88;
   } # preprocess_results_page
@@ -211,26 +239,28 @@ sub preprocess_results_page
 sub parse_tree
   {
   my $self = shift;
-  my $tree = shift;
-  print STDERR " + ::Yahoo got a tree $tree\n" if 2 <= $self->{_debug};
+  my $oTree = shift;
+  print STDERR " + ::Yahoo got a tree $oTree\n" if (2 <= $self->{_debug});
+  # Every time we get a page from yahoo.com, we have to pause before
+  # fetching another.
+  $iMustPause++;
   my $hits_found = 0;
-  my $iCountSpoof = 0;
   my $WS = q{[\t\r\n\240\ ]};
   # Only try to parse the hit count if we haven't done so already:
-  print STDERR " + start, approx_h_c is ==", $self->approximate_hit_count(), "==\n" if 2 <= $self->{_debug};
+  print STDERR " + start, approx_h_c is ==", $self->approximate_hit_count(), "==\n" if (2 <= $self->{_debug});
   if ($self->approximate_hit_count() < 1)
     {
     # Sometimes the hit count is inside a <DIV> tag:
-    my @aoDIV = $tree->look_down('_tag' => 'div',
+    my @aoDIV = $oTree->look_down('_tag' => 'div',
                                   'class' => 'ygbody',
                                  );
  DIV_TAG:
     foreach my $oDIV (@aoDIV)
       {
       next unless ref $oDIV;
-      print STDERR " + try DIV ==", $oDIV->as_HTML if 2 <= $self->{_debug};
+      print STDERR " + try DIV ==", $oDIV->as_HTML if (2 <= $self->{_debug});
       my $s = $oDIV->as_text;
-      print STDERR " +   TEXT ==$s==\n" if 2 <= $self->{_debug};
+      print STDERR " +   TEXT ==$s==\n" if (2 <= $self->{_debug});
       if ($s =~ m!out\s+of\s+(?:about\s+)?([,0-9]+)!i)
         {
         my $iCount = $1;
@@ -243,15 +273,15 @@ sub parse_tree
   if ($self->approximate_hit_count() < 1)
     {
     # Sometimes the hit count is inside a <small> tag:
-    my @aoDIV = $tree->look_down('_tag' => 'small',
+    my @aoDIV = $oTree->look_down('_tag' => 'small',
                                  );
  SMALL_TAG:
     foreach my $oDIV (@aoDIV)
       {
       next unless ref $oDIV;
-      print STDERR " + try SMALL ==", $oDIV->as_HTML if 2 <= $self->{_debug};
+      print STDERR " + try SMALL ==", $oDIV->as_HTML if (2 <= $self->{_debug});
       my $s = $oDIV->as_text;
-      print STDERR " +   TEXT ==$s==\n" if 2 <= $self->{_debug};
+      print STDERR " +   TEXT ==$s==\n" if (2 <= $self->{_debug});
       if ($s =~ m!out\s+of\s+(?:about\s+)?([,0-9]+)!i)
         {
         my $iCount = $1;
@@ -261,96 +291,77 @@ sub parse_tree
         } # if
       } # foreach DIV_TAG
     } # if
-  print STDERR " + found approx_h_c is ==", $self->approximate_hit_count(), "==\n" if 2 <= $self->{_debug};
+  print STDERR " + found approx_h_c is ==", $self->approximate_hit_count(), "==\n" if (2 <= $self->{_debug});
 
-  # Unfortunately, the URL results are not logically marked up with
-  # HTML.  We have to resort to old-fashioned string parsing!
-  my $sAll = $tree->as_HTML;
-  my @asChunk = split('<big>', $sAll);
-  # For some yahoo engines, look for the result count in the first chunk:
-  my $sChunkCount = shift @asChunk;
-  if (
-      # For Yahoo::China
-      ($sChunkCount =~ m!<b\sclass="yge">([0-9,]+)\s*</b>!i)
-     )
+  my @aoLI = $oTree->look_down(_tag => 'li');
+ LI_TAG:
+  foreach my $oLI (@aoLI)
     {
-    $self->approximate_result_count($1);
-    } # if
-  # The remaining chunks contain search results:
- CHUNK:
-  foreach my $sChunk (@asChunk)
-    {
-    # The last chunk ends with </span>:
-    $sChunk =~ s!</span>.*\Z!!;
-    print STDERR " +   consider <big> chunk ==$sChunk==\n" if 2 <= $self->{_debug};
-    # The first <A> tag contains the URL and title:
-    unless ($sChunk =~ s!\A.*?<a\shref="([^"]+)"[^>]*?>(.+?)</a>!!)
+    # Sanity check:
+    next LI_TAG unless ref($oLI);
+    my @aoA = $oLI->look_down(_tag => 'a');
+    my $oA = shift @aoA;
+    next LI_TAG unless ref($oA);
+    my $sTitle = $oA->as_text || '';
+    my $sURL = $oA->attr('href') || '';
+    next LI_TAG unless ($sURL ne '');
+    unshift @aoA, $oA;
+    # Strip off the yahoo.com redirect part of the URL:
+    $sURL =~ s!\A.*?\*-!!;
+    # Delete the useless human-readable restatement of the URL (first
+    # <EM> tag we come across):
+    my $oEM = $oLI->look_down(_tag => 'em');
+    if (ref($oEM))
       {
-      print STDERR " --- did not find <A> inside <big> chunk\n" if 2 <= $self->{_debug};
-      next CHUNK;
-      } # unless
-    my ($sURL, $sTitle) = ($1, $2);
-    print STDERR " +   TITLE == $sTitle\n" if 2 <= $self->{_debug};
-    # Delete Yahoo-redirect portion of URL:
-    next CHUNK unless ($sURL =~ s!\A.+?\*-?(?=http)!!);
-    print STDERR " +   raw URL == $sURL\n" if 2 <= $self->{_debug};
-    $sURL = uri_unescape($sURL);
-    print STDERR " +   cooked URL == $sURL\n" if 2 <= $self->{_debug};
-    # Ignore Yahoo Directory categories, etc.:
-    next CHUNK if $sURL =~ m!(\A|/search/empty/\?)http://dir\.yahoo\.com!;
-    # Delete all remaining <A> tags:
-    $sChunk =~ s!<a\s.+?</a>!!g;
-    # The remaining text of the LI is the description:
-    my $sDesc = $sChunk;
-    print STDERR " +   raw DESC  ==$sDesc==\n" if 2 <= $self->{_debug};
-    # Chop off extraneous:
-    $sDesc =~ s!\s+\|\s+.*?\Z!!i;
-    print STDERR " +   DESC  == $sDesc\n" if 2 <= $self->{_debug};
+      $oEM->detach;
+      $oEM->delete;
+      } # if
+ A_TAG:
+    foreach my $oA (@aoA)
+      {
+      $oA->detach;
+      $oA->delete;
+      } # foreach A_TAG
+    my $sDesc = $oLI->as_text;
+    print STDERR " +   raw     sDesc is ==$sDesc==\n" if (2 <= $self->{_debug});
+    # Grab stuff off the end of the description:
+    my $sSize = $1 if ($sDesc =~ s!\s+(-\s+)+(\d+k?)(\s+-)+\s+\Z!!);
+    $sSize ||= '';
+    print STDERR " +   cooked  sDesc is ==$sDesc==\n" if (2 <= $self->{_debug});
     my $hit = new WWW::SearchResult;
     $hit->add_url($sURL);
     $sTitle = $self->strip($sTitle);
     $sDesc = $self->strip($sDesc);
     $hit->title($sTitle);
     $hit->description($sDesc);
+    $hit->size($sSize);
     push(@{$self->{cache}}, $hit);
     $hits_found++;
-    } # foreach CHUNK
-
-  if (! $iCountSpoof)
+    } # foreach LI_TAG
+  # Now try to find the "next page" link:
+  my @aoA = $oTree->look_down('_tag' => 'a');
+ NEXT_A:
+  foreach my $oA (reverse @aoA)
     {
-    # The "next" button is in a table...
-    my @aoTABLE = $tree->look_down('_tag' => 'table');
-    # ...but we want the LAST one appearing on the page:
- TABLE:
-    foreach my $oTABLE (reverse @aoTABLE)
+    next NEXT_A unless ref($oA);
+    my $sAhtml = $oA->as_HTML;
+    printf STDERR (" +   next A ==%s==\n", $sAhtml) if (2 <= $self->{_debug});
+    my $sURL = $oA->attr('href');
+    if (
+        ($oA->as_text eq 'Next')
+        ||
+        # I can not type Chinese, nor even cut-and-paste into Emacs
+        # with confidence that the encoding will not get screwed up,
+        # so I resort to this:
+        ($sAhtml =~ m!&Iuml;&Acirc;&Ograve;&raquo;&Ograve;&sup3;!i)
+       )
       {
-      next TABLE unless ref($oTABLE);
-      printf STDERR " + next TABLE == %s\n", $oTABLE->as_HTML if 2 <= $self->{_debug};
-      my @aoA = $oTABLE->look_down('_tag' => 'a');
- A:
-      foreach my $oA (@aoA)
-        {
-        next A unless ref($oA);
-        my $sAhtml = $oA->as_HTML;
-        printf STDERR (" +   next A == %s\n", $sAhtml) if 2 <= $self->{_debug};
-        my $sURL = $oA->attr('href');
-        if (
-            ($oA->as_text =~ m!\ANext(\s+\d+)?\Z!i)
-            ||
-            # I can not type Chinese, nor even cut-and-paste into
-            # Emacs with confidence that the encoding will get screwed
-            # up, so I resort to this:
-            ($sAhtml =~ m!&Iuml;&Acirc;&Ograve;&raquo;&Ograve;&sup3;!i)
-           )
-          {
-          # Delete Yahoo-redirect portion of URL:
-          $sURL =~ s!\A.+?\*?-?(?=http)!!;
-          $self->{_next_url} = $self->absurl($self->{'_prev_url'}, $sURL);
-          last TABLE;
-          } # if
-        } # foreach $oA
-      } # foreach $oTABLE
-    } # if
+      # Delete Yahoo-redirect portion of URL:
+      $sURL =~ s!\A.+?\*?-?(?=http)!!;
+      $self->{_next_url} = $self->absurl($self->{'_prev_url'}, $sURL);
+      last NEXT_A;
+      } # if
+    } # foreach NEXT_A
   return $hits_found;
   } # parse_tree
 

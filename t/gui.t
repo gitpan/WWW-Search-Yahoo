@@ -13,7 +13,7 @@ $iDebug = 0;
 &my_engine('Yahoo');
 # goto MULTI;
 # This GUI query returns 1 page of results:
-$iDebug = 0;
+$iDebug = 1;
 &my_test('gui', '"Yendor'.'ian tales demo"', 1, 99, $iDebug);
 MULTI:
 $iDebug = 0;
@@ -21,8 +21,6 @@ $iDebug = 0;
 # per page:
 &my_test('gui', 'pokemon', 35, undef, $iDebug);
 $iDebug = 0;
-cmp_ok(101, '<=', $WWW::Search::Test::oSearch->approximate_hit_count,
-       'approximate_hit_count');
 
 sub my_engine
   {
@@ -39,6 +37,10 @@ sub my_test
   my $iCount = &WWW::Search::Test::count_results(@_);
   cmp_ok($iMin, '<=', $iCount, qq{lower-bound num-hits for query=$sQuery}) if defined $iMin;
   cmp_ok($iCount, '<=', $iMax, qq{upper-bound num-hits for query=$sQuery}) if defined $iMax;
+  cmp_ok($iMin, '<=', $WWW::Search::Test::oSearch->approximate_result_count,
+         qq{lower-bound approximate_result_count}) if defined $iMin;
+  cmp_ok($WWW::Search::Test::oSearch->approximate_result_count, '<=', $iMax,
+         qq{upper-bound approximate_result_count}) if defined $iMax;
   } # my_test
 
 __END__
