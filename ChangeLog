@@ -1,3 +1,13 @@
+2000-03-27  Kingpin  <mthurn@tasc.com>
+
+	* test.pl: updated test cases
+
+	* Yahoo.pm: (2.09) fixed for new CGI options
+
+2000-03-20  Kingpin  <mthurn@tasc.com>
+
+	* test.pl: added "real" test
+
 Revision history for Perl extension WWW::Search::Yahoo.
 
 2.07  Fri Feb  4 10:01:42 2000

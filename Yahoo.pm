@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Wm. L. Scheding and Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 1.23 2000/02/04 15:00:02 mthurn Exp $
+# $Id: Yahoo.pm,v 1.25 2000/03/27 16:27:55 mthurn Exp $
 
 =head1 NAME
 
@@ -32,8 +32,12 @@ be done through L<WWW::Search> objects.
 
 =head1 NOTES
 
-The default search is: Yahoo's Inktomi-based index (not usenet); "OR"
-of all query terms (not "AND").
+The default search is: Yahoo's Inktomi-based index (not usenet).
+
+The default search is the "OR" of all query terms (not "AND").
+If you want the "AND" of all the query terms, add {'za' => 'and'} to the second argument to native_query.
+If you want to search the query as a phrase, add {'za' => 'phrase'} to the second argument to native_query.
+If you want to search the query as Yahoo's "intelligent default" (whatever that means), add {'za' => 'default'} to the second argument to native_query.
 
 =head1 SEE ALSO
 
@@ -64,6 +68,10 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 =head1 VERSION HISTORY
 
 If it''s not listed here, then it wasn''t a meaningful nor released revision.
+
+=head2 2.09, 2000-03-27
+
+fixed for new CGI options
 
 =head2 2.07, 2000-02-04
 
@@ -116,14 +124,8 @@ require Exporter;
 @EXPORT_OK = qw();
 @ISA = qw(WWW::Search Exporter);
 
-$VERSION = '2.07';
+$VERSION = '2.09';
 $MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
-
-$TEST_CASES = <<"ENDTESTCASES";
-&test('Yahoo', '$MAINTAINER', 'zero', \$bogus_query, \$TEST_EXACTLY);
-&test('Yahoo', '$MAINTAINER', 'one', 'LSA'.'M', \$TEST_RANGE, 2,84);
-&test('Yahoo', '$MAINTAINER', 'two', 'pok'.'emon', \$TEST_GREATER_THAN, 87);
-ENDTESTCASES
 
 use Carp ();
 use WWW::Search(qw( generic_option strip_tags ));
@@ -131,81 +133,72 @@ require WWW::SearchResult;
 
 sub gui_query
   {
-  # actual URL as of 2000-02-04 is
-  # http://ink.yahoo.com/bin/query?p=sushi+restaurant+Columbus+Ohio&hc=0&hs=0
+  # actual URL as of 2000-03-27 is
+  # http://search.yahoo.com/bin/search?p=sushi+restaurant+Columbus+Ohio
   my ($self, $sQuery, $rh) = @_;
-  $self->{'search_base_url'} ||= 'http://ink.yahoo.com';
-  $self->{_options} = {
-                       'search_url' => $self->{'search_base_url'} .'/bin/query',
-                       'p' => $sQuery,
-                       'hc' => 0,
-                       'hs' => 0,
-                      };
+  $self->{'search_base_url'} = 'http://search.yahoo.com';
+  $self->{'_options'} = {
+                         'search_url' => $self->{'search_base_url'} .'/bin/search',
+                         'p' => $sQuery,
+                         # 'hc' => 0,
+                         # 'hs' => 0,
+                        };
+  # print STDERR " +   Yahoo::gui_query() is calling native_query()...\n";
   return $self->native_query($sQuery, $rh);
   } # gui_query
 
 
 sub native_setup_search
   {
-  my($self, $native_query, $native_options_ref) = @_;
-  # print STDERR " * this is Martin's new Yahoo.pm!\n" if $self->{_debug};
-  # Why waste time sending so many queries?  Do a whole lot all at once!
-  my $DEFAULT_HITS_PER_PAGE = 100;
-  # $DEFAULT_HITS_PER_PAGE = 10;   # for debugging
-  $self->{'_hits_per_page'} = $DEFAULT_HITS_PER_PAGE;
-  # Add one to the number of hits needed, because Search.pm does ">"
-  # instead of ">=" on line 672!
-  my $iMaximum = 1 + $self->maximum_to_retrieve;
-  # Divide the problem into N pages of K hits per page.
-  my $iNumPages = 1 + int($iMaximum / $self->{'_hits_per_page'});
-  if (1 < $iNumPages)
-    {
-    $self->{'_hits_per_page'} = 1 + int($iMaximum / $iNumPages);
-    }
-  else
-    {
-    $self->{'_hits_per_page'} = $iMaximum;
-    }
-  $self->{agent_e_mail} = 'MartinThurn@iname.com';
+  my ($self, $native_query, $rhOptsArg) = @_;
+  # print STDERR " +     This is Yahoo::native_setup_search()...\n";
+  # print STDERR " +       _options is ", $self->{'_options'}, "\n";
+
+  # As of 2000-03-27 or so, yahoo.com does NOT let you choose the
+  # number of hits per page:
+  $self->{'_hits_per_page'} = 20;
 
   # If we run as a robot, WWW::RobotRules fetches the
   # http://www.yahoo.com instead of http://www.yahoo.com/robots.txt,
   # and dumps a thousand warnings to STDERR.
   $self->user_agent('non-robot');
+  $self->{agent_e_mail} = 'MartinThurn@iname.com';
 
-  $self->{_next_to_retrieve} = 0;
+  $self->{_next_to_retrieve} = 1;
   $self->{'_num_hits'} = 0;
 
-  if (!defined($self->{_options})) 
+  if (! defined($self->{'_options'}))
     {
-    $self->{'search_base_url'} ||= 'http://search.yahoo.com';
-    $self->{_options} = {
-                         'search_url' => $self->{'search_base_url'} .'/search',
-                         'b' => $self->{_next_to_retrieve},
-                         'd' => 'y',  # Yahoo's index, not usenet
-                         'h' => 's',  # web sites
-                         'n' => $self->{_hits_per_page},
-                         'o' => 1,
-                         'p' => $native_query,
-                         'za' => 'or',  # OR of query words
-                        };
+    # We do not clobber the existing _options hash, if there is one;
+    # e.g. if gui_search() was already called on this object
+    $self->{'search_base_url'} ||= 'http://ink.yahoo.com';
+    $self->{'_options'} = {
+                           'search_url' => $self->{'search_base_url'} .'/bin/query',
+                           'o' => 1,
+                           'p' => $native_query,
+                           'd' => 'y',  # Yahoo's index, not usenet
+                           'za' => 'or',  # OR of query words
+                           'h' => 'c',  # web sites
+                           'g' => 0,
+                           'n' => $self->{_hits_per_page},
+                           'b' => $self->{_next_to_retrieve},
+                          };
     } # if
-  my $options_ref = $self->{_options};
-  if (defined($native_options_ref)) 
+  my $rhOptions = $self->{'_options'};
+  if (defined($rhOptsArg)) 
     {
     # Copy in new options.
-    foreach (keys %$native_options_ref) 
+    foreach my $key (keys %$rhOptsArg) 
       {
-      $options_ref->{$_} = $native_options_ref->{$_};
+      $rhOptions->{$key} = $rhOptsArg->{$key} if defined($rhOptsArg->{$key});
       } # foreach
     } # if
   # Finally, figure out the url.
-  $self->{_next_url} = $self->{_options}{'search_url'} .'?'. $self->hash_to_cgi_string($options_ref);
+  $self->{'_next_url'} = $self->{'_options'}{'search_url'} .'?'. $self->hash_to_cgi_string($rhOptions);
 
-  $self->{_debug} = $options_ref->{'search_debug'};
-  $self->{_debug} = 2 if ($options_ref->{'search_parse_debug'});
+  $self->{_debug} = $rhOptions->{'search_debug'};
+  $self->{_debug} = 2 if ($rhOptions->{'search_parse_debug'});
   $self->{_debug} = 0 if (!defined($self->{_debug}));
-  print STDERR " * pages to request: $iNumPages pages of ", $self->{'_hits_per_page'}, " hits each.\n" if $self->{_debug};
   } # native_setup_search
 
 
@@ -213,7 +206,7 @@ sub native_setup_search
 sub native_retrieve_some
   {
   my ($self) = @_;
-  print STDERR " *   Yahoo::native_retrieve_some()\n" if $self->{_debug};
+  print STDERR " +   Yahoo::native_retrieve_some()\n" if $self->{_debug};
   
   # fast exit if already done
   return undef if (!defined($self->{_next_url}));
@@ -222,7 +215,7 @@ sub native_retrieve_some
   $self->user_agent_delay if 1 < $self->{'_next_to_retrieve'};
   
   # get some
-  print STDERR " *   sending request (",$self->{_next_url},")\n" if $self->{_debug};
+  print STDERR " +   sending request (",$self->{_next_url},")\n" if $self->{_debug};
   my($response) = $self->http_request('GET', $self->{_next_url});
   $self->{response} = $response;
   if (!$response->is_success) 
@@ -231,7 +224,7 @@ sub native_retrieve_some
     }
   
   $self->{'_next_url'} = undef;
-  print STDERR " *   got response\n" if $self->{_debug};
+  print STDERR " +   got response\n" if $self->{_debug};
   # parse the output
   my($HEADER, $HITS, $TRAILER) = qw(HE HI TR);
   my($hits_found) = 0;
@@ -242,7 +235,7 @@ sub native_retrieve_some
   foreach ($self->split_lines($response->content()))
     {
     next if m@^$@; # short circuit for blank lines
-    print STDERR " * $state ===$_=== " if 2 <= $self->{'_debug'};
+    print STDERR " + $state ===$_=== " if 2 <= $self->{'_debug'};
     if (9 < $self->{'_debug'})
       {
       if ($state eq $HITS && m@\074a\shref=\"[^"]+\">(.......)@i)
@@ -260,7 +253,7 @@ sub native_retrieve_some
       $self->{'_next_to_retrieve'} += $self->{'_hits_per_page'};
       $self->{'_next_to_retrieve'} = $1 if $sURL =~ m/b=(\d+)/;
       $self->{'_next_url'} = $self->{'search_base_url'} . $sURL;
-      print STDERR " * next URL is ", $self->{'_next_url'}, "\n" if 2 <= $self->{_debug};
+      print STDERR " + next URL is ", $self->{'_next_url'}, "\n" if 2 <= $self->{_debug};
       $state = $TRAILER;
       next LINE_OF_INPUT;
       }
@@ -328,7 +321,7 @@ sub native_retrieve_some
       {
       print STDERR "header count line (korea)\n" if 2 <= $self->{_debug};
       # Actual line of input from Yahoo Korea:
-      # <CENTER><FONT SIZE="+1"><B>ÅªÅÁÅ¿ÅÃÅ∆ÅÆ Å∞ÅÀÅªÅˆÅ∞Å·Å∞Å˙ &nbsp; <FONT SIZE="-1">(1&nbsp;-&nbsp;84&nbsp;/&nbsp;114)</FONT></B></FONT></CENTER>
+      # <CENTER><FONT SIZE="+1"><B>$(B"="i"B"N"H"0(B $(B"2"M"="x"2"c"2"|(B &nbsp; <FONT SIZE="-1">(1&nbsp;-&nbsp;84&nbsp;/&nbsp;114)</FONT></B></FONT></CENTER>
       $self->approximate_result_count($1);
       $state = $HITS;
       }
@@ -366,14 +359,14 @@ sub native_retrieve_some
       {
       print STDERR "next line\n" if 2 <= $self->{_debug};
       # Actual line of input from Yahoo Korea:
-      # <a href="/bin/search?&d=y&n=84&o=1&p=moon&za=or&hc=3&hs=114&h=s&b=85">Å¥ÅŸÅ¿ÅΩ 30Å∞Å≥Å¿Å« Å∞ÅÀÅªÅˆÅ∞Å·Å∞Å˙</a>
+      # <a href="/bin/search?&d=y&n=84&o=1&p=moon&za=or&hc=3&hs=114&h=s&b=85">$(B"6"["B"?(B 30$(B"2"5"B"I(B $(B"2"M"="x"2"c"2"|(B</a>
       # There is a "next" button on this page, therefore there are
       # indeed more results for us to go after next time.
       my $sURL = $1;
       $self->{'_next_to_retrieve'} += $self->{'_hits_per_page'};
       $self->{'_next_to_retrieve'} = $1 if $sURL =~ m/b=(\d+)/;
       $self->{'_next_url'} = $self->{'search_base_url'} . $sURL;
-      print STDERR " * next URL is ", $self->{'_next_url'}, "\n" if 2 <= $self->{_debug};
+      print STDERR " + next URL is ", $self->{'_next_url'}, "\n" if 2 <= $self->{_debug};
       $state = $TRAILER;
       } 
     else 
@@ -400,3 +393,6 @@ __END__
 
 GUI search:
 http://ink.yahoo.com/bin/query?p=sushi+restaurant+Columbus+Ohio&hc=0&hs=0
+
+Advanced search:
+http://ink.yahoo.com/bin/query?o=1&p=LSAm&d=y&za=or&h=c&g=0&n=20
