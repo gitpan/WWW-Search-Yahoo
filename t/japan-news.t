@@ -11,7 +11,7 @@ my $iDump = 0;
 JAPAN_NEWS_TEST:
 $iDebug = 0;
 &my_engine('Yahoo::Japan::News');
-goto SKIP;
+# goto SKIP;
 # This test returns no results (but we should not get an HTTP error):
 $iDebug = 0;
 &my_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug, $iDebug);

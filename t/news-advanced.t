@@ -8,7 +8,7 @@ BEGIN { use_ok('WWW::Search::Yahoo') };
 
 &Date_Init('TZ=US/Eastern');
 
-my $iDebug;
+my $iDebug = 0;
 my $iDump = 0;
 
 NEWS_ADVANCED_TEST:
@@ -17,20 +17,24 @@ NEWS_ADVANCED_TEST:
 # This test returns no results (but we should not get an HTTP error):
 &my_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug);
 $iDebug = 0;
-&my_test('normal', 'Wakayama', 1, 99, $iDebug);
-# DEBUG_NOW:
+&my_test('normal', 'Wakayama', 1, 99, $iDebug, $iDump);
 $iDebug = 0;
-&my_test('normal', 'Japan', 101, undef, $iDebug);
-cmp_ok(101, '<=', $WWW::Search::Test::oSearch->approximate_hit_count,
+&my_test('normal', 'Japan', 105, undef, $iDebug, $iDump);
+cmp_ok(105, '<=', $WWW::Search::Test::oSearch->approximate_hit_count,
        'approximate_hit_count');
-
 # goto SKIP_REST;
+
 DEBUG_NOW:
-$WWW::Search::Test::oSearch->date_from('2003-08-21');
-$WWW::Search::Test::oSearch->date_to  ('2003-08-30');
-$iDebug = 0;
-$iDump = 0;
-&my_test('normal', '"Aomori"', 1, 9, $iDebug, $iDump);
+;
+TODO:
+  {
+  local $TODO = qq{yahoo.com advanced search is often broken.};
+  $WWW::Search::Test::oSearch->date_from('2003-10-21');
+  $WWW::Search::Test::oSearch->date_to  ('2003-10-30');
+  $iDebug = 0;
+  $iDump = 0;
+  &my_test('normal', 'Aomori', 1, 9, $iDebug, $iDump);
+  } # end of TODO block
 SKIP_REST:
 exit 0;
 

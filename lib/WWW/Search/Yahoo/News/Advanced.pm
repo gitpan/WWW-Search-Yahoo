@@ -1,5 +1,5 @@
 
-# $Id: Advanced.pm,v 1.10 2003-08-27 23:56:06-04 kingpin Exp kingpin $
+# $Id: Advanced.pm,v 1.11 2003-11-01 16:23:53-05 kingpin Exp kingpin $
 
 =head1 NAME
 
@@ -107,10 +107,12 @@ sub native_setup_search
   # print STDERR " +   in UK::native_setup_search, rh is ", Dumper($rh);
   my $sDateFrom = $self->date_from || '';
   my $sDateTo = $self->date_to || '';
+  my $iUseDate = 0;
   if ($sDateFrom ne '')
     {
     # User specified the beginning date.
     $sDateFrom = &UnixDate(&ParseDate($sDateFrom), '%m/%d/%y');
+    $iUseDate = 1;
     }
   else
     {
@@ -123,6 +125,7 @@ sub native_setup_search
     {
     # User specified the ending date.
     $sDateTo = &UnixDate(&ParseDate($sDateTo), '%m/%d/%y');
+    $iUseDate = 1;
     }
   else
     {
@@ -130,7 +133,12 @@ sub native_setup_search
     $sDateTo = &UnixDate(&ParseDate('tomorrow'), '%m/%d/%y');
     }
   $self->{'_options'} = {
-                         '3' => "$sDateFrom-$sDateTo",
+                         'adv' => 1,
+                         # '1' => '', # this if for selecting sources
+                         # '2' => '', # this is number of days to search
+                         'c' => 'news',
+                         # 'cat' => '', # this is for selecting category
+                         'ei' => 'UTF-8',
                          'n' => 100,  # 10 for testing, 100 for release
                          'o' => 'o',  # OR of all words
                          'p' => $sQuery,
@@ -140,6 +148,11 @@ sub native_setup_search
 
                          # 's' => '-s',  # sort order
                         };
+  if ($iUseDate)
+    {
+    $self->{'_options'}->{'3'} = qq{$sDateFrom-$sDateTo};
+    } # if
+
   $rh->{'search_base_url'} = 'http://search.news.yahoo.com';
   $rh->{'search_base_path'} = '/search/news/';
   # print STDERR " +   Yahoo::UK::native_setup_search() is calling SUPER::native_setup_search()...\n";
@@ -151,6 +164,7 @@ sub preprocess_results_page
   {
   my $self = shift;
   my $s = shift;
+  print STDERR " + News::Advanced::preprocess()\n" if $self->{_debug};
   # Remove all carriage-returns:
   $s =~ tr!\r\n!!d;
   # Convert nbsp to plain space:
@@ -167,7 +181,7 @@ sub preprocess_results_page
   if (0)
     {
     print STDERR $s;
-    exit 9;
+    # exit 9;
     } # if
   return $s;
   } # preprocess_results_page
@@ -190,7 +204,7 @@ sub native_retrieve_some
   # when we parse the html:
   $self->{_next_url} = undef;
   $self->{response} = $response;
-  # print STDERR " --- HTTP response is:\n", $response->as_string if 4 < $self->{_debug};
+  print STDERR " --- HTTP response is:\n", $response->as_string if 4 < $self->{_debug};
   if (! $response->is_success)
     {
     if ($self->{_debug})
@@ -216,17 +230,22 @@ sub native_retrieve_some
       my $iCount = $1;
       print STDERR " +   found number $iCount\n" if 2 <= $self->{_debug};
       $self->approximate_result_count($iCount);
+      my $sLine = shift @asLine;
+      $self->{_next_url} = $1 if ($sLine =~ m!<a href="(.+search\.news\.yahoo\.com.+)">!);
       next LINE;
       } # if
     next LINE unless (
                       ($sLine =~ m!<a href="(.+tmpl=story.+)">!)
                       ||
                       ($sLine =~ m!<a href="(.+moreover\.com/click/here.+)">!)
+                      ||
+                      ($sLine =~ m!<a href="(.+biz\.yahoo\.com.+)">!)
                      );
     my $sURL = $1;
     print STDERR " +   found url ==$sURL==\n" if 2 <= $self->{_debug};
     my $sTitle = shift @asLine;
-    $sTitle = shift @asLine;
+    $sTitle = &WWW::Search::strip_tags(shift @asLine);
+    next LINE unless ($sTitle ne '');
     print STDERR " +   found title ==$sTitle==\n" if 2 <= $self->{_debug};
     my $sDate = '';
     if ($self->lookfor('</u>', \@asLine))
@@ -372,7 +391,7 @@ A_TAG:
     {
     printf STDERR " + A == %s\n", $oA->as_HTML if 2 <= $self->{_debug};
     # <a href="http://search.news.yahoo.com/search/news?p=Japan&amp;b=21"><b>Next 20 &gt;</b></a>
-    if ($oA->as_text =~ m!Next\s+\d+\s+!i)
+    if ($oA->as_text =~ m!Next\s+\d+!i)
       {
       $self->{_next_url} = $HTTP::URI_CLASS->new_abs($oA->attr('href'), $self->{'_prev_url'});
       last A_TAG;
@@ -403,6 +422,12 @@ sub skip_text_elements
 1;
 
 __END__
+
+as of 2003-10:
+
+http://search.news.yahoo.com/search/news/?adv=1&p=Wakayama&ei=UTF-8&c=news&o=a&s=&n=100&2=&3=
+
+older version:
 
 http://search.news.yahoo.com/search/news?p=george+lucas&s=&n=10&o=&2=&3=05/05/01-05/15/01
 

@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 2.32 2003-06-19 21:26:00-04 kingpin Exp kingpin $
+# $Id: Yahoo.pm,v 2.33 2003-09-20 15:49:47-04 kingpin Exp kingpin $
 
 =head1 NAME
 
@@ -100,20 +100,19 @@ Updated test cases.
 
 package WWW::Search::Yahoo;
 
-# require Exporter;
-# @EXPORT = qw();
-# @EXPORT_OK = qw();
-@ISA = qw( WWW::Search ); # Exporter);
-
-$VERSION = sprintf("%d.%02d", q$Revision: 2.32 $ =~ /(\d+)\.(\d+)/o);
-$MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
-
 use Carp ();
 use Data::Dumper;  # for debugging only
 use HTML::TreeBuilder;
 use WWW::Search qw( generic_option strip_tags );
 use WWW::SearchResult;
 use URI;
+
+use strict;
+use vars qw( $VERSION $MAINTAINER @ISA );
+
+@ISA = qw( WWW::Search );
+$VERSION = sprintf("%d.%02d", q$Revision: 2.33 $ =~ /(\d+)\.(\d+)/o);
+$MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub gui_query
   {

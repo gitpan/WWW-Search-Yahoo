@@ -15,7 +15,7 @@ $iDebug = 0;
 $iDump = 0;
 # This query returns 1 page of results:
 &my_test('normal', 'Tina Fey', 1, 24, $iDebug, $iDump);
-cmp_ok(10, '<=', $WWW::Search::Test::oSearch->approximate_hit_count,
+cmp_ok(5, '<=', $WWW::Search::Test::oSearch->approximate_hit_count,
        'approximate_hit_count');
 $WWW::Search::Test::oSearch->ignore_channels(qw( ETV KNBC ));
 &my_test('normal', 'Tina Fey', 1, 5, $iDebug, $iDump);

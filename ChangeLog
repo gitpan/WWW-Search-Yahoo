@@ -1,3 +1,19 @@
+2003-11-01  Kingpin  <mthurn@verizon.net>
+
+	* lib/WWW/Search/Yahoo/News/Advanced.pm (native_retrieve_some): follow next page of results
+
+2003-09-20  Kingpin  <mthurn@verizon.net>
+
+	* lib/WWW/Search/Yahoo.pm: use strict
+
+2003-08-31  Kingpin  <mthurn@verizon.net>
+
+	* t/echostar-advanced.t: new file
+
+	* lib/WWW/Search/Yahoo/TV/Echostar.pm (native_setup_search): set _allow_empty_query if doing Advanced search;
+	(parse_tree): parse result count in Advanced search results;
+	added pod for how to do Advanced search
+
 2003-08-27  Kingpin  <mthurn@verizon.net>
 
 	* lib/WWW/Search/Yahoo/News/Advanced.pm (native_retrieve_some): fixed for moreover.com links

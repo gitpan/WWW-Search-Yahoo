@@ -2,16 +2,21 @@
 use inc::Module::Install;
 
 name('WWW-Search-Yahoo');
-version(2.36);
+version(2.37);
 
 author('Martin Thurn <mthurn@cpan.org>');
 license('perl');
 
 requires('Date::Manip');
 requires('HTML::TreeBuilder');
+# We need the version of WWW::Search that allows empty query string:
+requires('WWW::Search' => 2.42);
 # We need the version of WWW::Search that has its own
 # native_setup_search():
 requires('WWW::Search' => 2.43);
+# We need the version of WWW::Search::Test where count_results() takes
+# a hashref as argument 7:
+requires('WWW::Search::Test' => 2.26);
 
 # Test::More is needed for `make test`:
 include_deps('Test::More', 5.004);

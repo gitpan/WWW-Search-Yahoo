@@ -1,4 +1,4 @@
-# $Id: Echostar.pm,v 1.6 2003-08-28 07:13:02-04 kingpin Exp kingpin $
+# $Id: Echostar.pm,v 1.7 2003-11-04 09:26:28-05 kingpin Exp kingpin $
 
 =head1 NAME
 
@@ -18,10 +18,19 @@ WWW::Search::Yahoo::TV::Echostar - backend for searching tv.yahoo.com
 This class is a Yahoo specialization of L<WWW::Search>.  It handles
 making and interpreting Yahoo TV searches F<http://tv.yahoo.com>.
 
+=head1 NOTES
+
+This backend does a basic keyword search against the Echostar (Dish
+Network) East Coast channel lineup.  The query is a set of words
+(phrase searching is not supported at tv.yahoo.com).  By default, the
+query terms are ORed and applied to all available fields (title,
+subtitle, description, and cast/crew).  See below for how to do
+Advanced search on these fields individually.
+
 =head1 METHODS
 
-In addition to these special methods, this class exports the entire
-L<WWW::Search> interface.
+In addition to the following special method(s), this class exports the
+entire L<WWW::Search> interface.
 
 =cut
 
@@ -39,7 +48,7 @@ use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 
 @ISA = qw( WWW::Search );
-$VERSION = sprintf("%d.%02d", q$Revision: 1.6 $ =~ /(\d+)\.(\d+)/o);
+$VERSION = sprintf("%d.%02d", q$Revision: 1.7 $ =~ /(\d+)\.(\d+)/o);
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 use constant DEBUG_SETUP => 0;
@@ -71,26 +80,31 @@ sub native_setup_search
                            'search' => 'true',
                            '.intl' => 'us',
                            # How many days ahead to search:
-                           'range' => 14,
+                           'range' => 7,
                           };
     } # if
   my $rhOptions = $self->{'_options'};
   if (defined($rhOptsArg))
     {
     # Copy in new options, promoting special ones:
-    foreach my $key (keys %$rhOptsArg)
+    while (my ($key, $val) = each %$rhOptsArg)
       {
       print STDERR " +   inspecting option $key..." if DEBUG_SETUP;
       if (WWW::Search::generic_option($key))
         {
         print STDERR "promote & delete\n" if DEBUG_SETUP;
-        $self->{$key} = $rhOptsArg->{$key} if defined($rhOptsArg->{$key});
+        $self->{$key} = $val if defined($val);
         delete $rhOptsArg->{$key};
         }
       else
         {
         print STDERR "copy\n" if DEBUG_SETUP;
-        $rhOptions->{$key} = $rhOptsArg->{$key} if defined($rhOptsArg->{$key});
+        if (($key eq 'search') && ($val eq 'adv'))
+          {
+          # User has requested Advanced Search.
+          $self->{_allow_empty_query} = 1;
+          } # if
+        $rhOptions->{$key} = $val if defined($val);
         }
       } # foreach
     print STDERR (" + resulting rhOptsArg is ", Dumper($rhOptsArg)) if DEBUG_SETUP;
@@ -148,12 +162,38 @@ sub parse_tree
     {
     next unless $oFONT;
     next unless ref $oFONT;
-    if ($oFONT->as_text =~ m!\bfound\s+(\d+)\s+matches\b!)
+    my $sFONT = $oFONT->as_text;
+    print STDERR " + for count, try FONT ==$sFONT==\n" if (2 <= $self->{_debug});
+    if ($sFONT =~ m!\bfound\s+(\d+)\s+match(?:es)?\b!i)
       {
+      print STDERR " +   for count, matched $1\n" if (2 <= $self->{_debug});
       $self->approximate_hit_count($1);
       last FONT_TAG;
       } # if
     } # foreach
+  if ($self->approximate_hit_count <= 0)
+    {
+    # Still need to find result count.  Maybe this was an Advanced
+    # search:
+    my @aoTABLE = $oTree->look_down(
+                                    '_tag' => 'table',
+                                    'width' => 440,
+                                   );
+ TABLE_TAG:
+    foreach my $oTABLE (@aoTABLE)
+      {
+      next unless $oTABLE;
+      next unless ref $oTABLE;
+      my $sTABLE = $oTABLE->as_text;
+      print STDERR " + for count, try TABLE ==$sTABLE==\n" if (2 <= $self->{_debug});
+      if ($oTABLE->as_text =~ m!\s*--\s+Found\s+(\d+)\s+matches\b!i)
+        {
+        print STDERR " +   for count, matched $1\n" if (2 <= $self->{_debug});
+        $self->approximate_hit_count($1);
+        last TABLE_TAG;
+        } # if
+      } # foreach TABLE_TAG
+    } # if
   my @aoA = $oTree->look_down('_tag' => 'a');
   A_TAG:
   foreach my $oA (@aoA)
@@ -211,10 +251,80 @@ sub parse_tree
 
 __END__
 
-=head1 NOTES
+=head1 OPTIONS
 
-This backend does a basic keyword search against the Echostar (Dish
-Network) East Coast channel lineup.
+To do advanced search (by subtitle, description, cast/crew) add the
+following options to the native_query().  For example, if you want to
+see if the lovely Lena Olin appears anytime in the next 24 hours:
+
+  $oSearch->native_query('',
+                         {
+                         search => 'adv',
+                         contrib => 'Lena Olin',
+                         range => 1,
+                         },
+                         );
+
+Note: if you search agains more than one of the fields, the result
+will be the AND of the searches.  For example, the following search
+will never return anything:
+
+  $oSearch->native_query('',
+                         {
+                         search => 'adv',
+                         title => 'football',
+                         subtit => 'Yankees',
+                         desc => 'Enterprise',
+                         contrib => 'Madonna',
+                         range => 1,
+                         },
+                         );
+
+=over
+
+=item search => 'adv'
+
+This option is required if you want to use any of the following:
+
+=item title => 'title words'
+
+Series title, like "Star Trek"; or sport, like "College Football".
+
+=item subtit => 'subtitle words'
+
+Episode title, like "All Our Yesterdays"; or team, like "Ohio State".
+
+=item desc => 'description words'
+
+Searches for words in the description.
+
+=item contrib => 'Actor Name'
+
+Unfortunately, tv.yahoo.com does not allow phrase searches, so "Diane
+Lane" returns a lot of bogus hits for "The Nanny", which stars Lauren
+Lane and was directed by Diane Somebody.
+
+=item range => 1
+
+To search only the next 24 hours.
+
+=item range => 7
+
+To search the next 7 days.  This is the default.
+
+=item range => 14
+
+To search the next 14 days.
+
+=item sort => 'timesort'
+
+To sort the results chronologically.
+
+=item sort => 'score'
+
+To sort the results by relevance.
+
+=back
 
 =head1 SEE ALSO
 

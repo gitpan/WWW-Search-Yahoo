@@ -7,22 +7,20 @@ inc/Module/Install/Include.pm
 inc/Module/Install/Makefile.pm
 inc/Module/Install/Metadata.pm
 inc/Module/Install/Win32.pm
-inc/Test.pm
 inc/Test/Builder.pm
 inc/Test/More.pm
-inc/Win32.pm
 lib/WWW/Search/Yahoo.pm
 lib/WWW/Search/Yahoo/DE.pm
 lib/WWW/Search/Yahoo/Japan/News.pm
 lib/WWW/Search/Yahoo/Korea.pm
 lib/WWW/Search/Yahoo/News/Advanced.pm
 lib/WWW/Search/Yahoo/TV/Echostar.pm
-lib/WWW/Search/Yahoo/TV/Echostar.pm.bak
 lib/WWW/Search/Yahoo/UK.pm
 Makefile.PL
 MANIFEST			This list of files
 README
 t/basic.t
+t/echostar-advanced.t
 t/echostar.t
 t/echostar_i_c.t
 t/gui.t

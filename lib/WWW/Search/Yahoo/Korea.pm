@@ -1,6 +1,6 @@
 # Korea.pm
 # by Martin Thurn
-# $Id: Korea.pm,v 1.4 2002/03/29 20:15:15 mthurn Exp $
+# $Id: Korea.pm,v 1.5 2003-11-04 09:26:55-05 kingpin Exp kingpin $
 
 =head1 NAME
 
