@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Wm. L. Scheding and Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 1.29 2000/05/10 17:50:21 mthurn Exp $
+# $Id: Yahoo.pm,v 1.31 2000/07/05 20:11:34 mthurn Exp $
 
 =head1 NAME
 
@@ -69,6 +69,10 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 If it''s not listed here, then it wasn''t a meaningful nor released revision.
 
+=head2 2.14, 2000-07-05
+
+output format changed (thanks to Bin Yu for fixes)
+
 =head2 2.11, 2000-04-27
 
 new URL for gui_query
@@ -128,7 +132,7 @@ require Exporter;
 @EXPORT_OK = qw();
 @ISA = qw(WWW::Search Exporter);
 
-$VERSION = '2.13';
+$VERSION = '2.14';
 $MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
 
 use Carp ();
@@ -249,7 +253,7 @@ sub native_retrieve_some
         } # if
       } # if debug
     if ($state eq $HITS &&
-        m!<a\shref=\"([^\"]+)">Next\s\d+\smatches</a>!i)
+        m!<a\shref=\"?([^\">]+)"?>Next\s\d+\smatches</a>!i)
       {
       # Actual line of input is:
       # <a href="/bin/query?p=sushi+restaurant+Columbus+Ohio&b=21&hc=0&hs=0">Next 20 matches</a></font></center>
@@ -386,6 +390,11 @@ sub native_retrieve_some
       print STDERR "header line\n" if 2 <= $self->{_debug};
       $self->approximate_result_count($1);
       $state = $HITS;
+      }
+
+    elsif ($state eq $HEADER && m|^\074UL>|i)
+      {
+      $state = $HITS; 
       }
 
     elsif ($state eq $HITS &&

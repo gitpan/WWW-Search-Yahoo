@@ -1,3 +1,13 @@
+2000-07-05  Kingpin  <mthurn@tasc.com>
+
+	* VERSION 2.14 RELEASED
+
+	* Yahoo.pm (native_retrieve_some): fixed parsing for new output format
+
+2000-05-11  Kingpin  <mthurn@tasc.com>
+
+	* VERSION 2.13 RELEASED
+
 2000-05-10  Kingpin  <mthurn@tasc.com>
 
 	* Yahoo.pm: fixed parsing for all sections of gui_query results
