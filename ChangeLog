@@ -1,3 +1,17 @@
+2003-08-27  Kingpin  <mthurn@verizon.net>
+
+	* lib/WWW/Search/Yahoo/News/Advanced.pm (native_retrieve_some): fixed for moreover.com links
+
+	* lib/WWW/Search/Yahoo/TV/Echostar.pm (ignore_channels): new method
+
+	* lib/WWW/Search/Yahoo/News/Advanced.pm (native_retrieve_some): fix parser for new page layout
+
+2003-07-29  Kingpin  <mthurn@megapipe.net>
+
+	* lib/WWW/Search/Yahoo/TV/Echostar.pm (native_setup_search): fix TZ setting(?); undo "fix" for preprocess_ bug
+
+	* lib/WWW/Search/Yahoo/Japan/News.pm: undo "fix" for preprocess_ bug
+
 2003-07-27  Kingpin  <mthurn@megapipe.net>
 
 	* lib/WWW/Search/Yahoo/TV/Echostar.pm: move episode title to after show name

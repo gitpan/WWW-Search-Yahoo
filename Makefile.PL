@@ -1,8 +1,8 @@
 
 use inc::Module::Install;
 
-name('WWW::Search::Yahoo');
-version(2.35);
+name('WWW-Search-Yahoo');
+version(2.36);
 
 author('Martin Thurn <mthurn@cpan.org>');
 license('perl');

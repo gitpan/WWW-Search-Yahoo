@@ -1,5 +1,5 @@
 
-# $Id: Advanced.pm,v 1.8 2003-06-19 21:26:55-04 kingpin Exp kingpin $
+# $Id: Advanced.pm,v 1.10 2003-08-27 23:56:06-04 kingpin Exp kingpin $
 
 =head1 NAME
 
@@ -164,7 +164,7 @@ sub preprocess_results_page
   # Delete blank lines:
   $s =~ s!\n\s*\n!\n!g;
   $s =~ s!\n\s*\n!\n!g;
-  if (0 && ($s =~ m!tmpl=story!))
+  if (0)
     {
     print STDERR $s;
     exit 9;
@@ -211,24 +211,31 @@ sub native_retrieve_some
     {
     if (($self->approximate_result_count == 0)
         &&
-        ($sLine =~ m!\A\s*\d+\s*-\s*\d+\s+of\s+(\d+)!))
+        ($sLine =~ m!\A\s*\d+\s*-\s*\d+\s+(?:out\s+)?of\s+(\d+)!))
       {
       my $iCount = $1;
-      # print STDERR " +   found number $iCount\n" if 2 <= $self->{_debug};
+      print STDERR " +   found number $iCount\n" if 2 <= $self->{_debug};
       $self->approximate_result_count($iCount);
       next LINE;
       } # if
-    next LINE unless ($sLine =~ m!<a href="(.+tmpl=story.+)">!);
+    next LINE unless (
+                      ($sLine =~ m!<a href="(.+tmpl=story.+)">!)
+                      ||
+                      ($sLine =~ m!<a href="(.+moreover\.com/click/here.+)">!)
+                     );
     my $sURL = $1;
     print STDERR " +   found url ==$sURL==\n" if 2 <= $self->{_debug};
     my $sTitle = shift @asLine;
+    $sTitle = shift @asLine;
     print STDERR " +   found title ==$sTitle==\n" if 2 <= $self->{_debug};
-    my $sDate;
-    if ($self->lookfor('</span>', \@asLine))
+    my $sDate = '';
+    if ($self->lookfor('</u>', \@asLine))
       {
       $sDate = shift @asLine;
       } # if
-    print STDERR " +   found date ==$sDate==\n" if 2 <= $self->{_debug};
+    print STDERR " +   found raw date ==$sDate==\n" if 2 <= $self->{_debug};
+    $sDate =~ s!\s*-\s+!!;
+    print STDERR " +   cooked    date ==$sDate==\n" if 2 <= $self->{_debug};
     my $sDesc = shift @asLine;
     $sDesc = shift @asLine;
     print STDERR " +   found description ==$sDesc==\n" if 2 <= $self->{_debug};

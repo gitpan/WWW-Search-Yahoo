@@ -17,7 +17,8 @@ NEWS_ADVANCED_TEST:
 # This test returns no results (but we should not get an HTTP error):
 &my_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug);
 $iDebug = 0;
-&my_test('normal', 'Aomori', 1, 99, $iDebug);
+&my_test('normal', 'Wakayama', 1, 99, $iDebug);
+# DEBUG_NOW:
 $iDebug = 0;
 &my_test('normal', 'Japan', 101, undef, $iDebug);
 cmp_ok(101, '<=', $WWW::Search::Test::oSearch->approximate_hit_count,
@@ -25,11 +26,13 @@ cmp_ok(101, '<=', $WWW::Search::Test::oSearch->approximate_hit_count,
 
 # goto SKIP_REST;
 DEBUG_NOW:
-$WWW::Search::Test::oSearch->date_from('2003-07-01');
-$WWW::Search::Test::oSearch->date_to  ('2003-07-15');
+$WWW::Search::Test::oSearch->date_from('2003-08-21');
+$WWW::Search::Test::oSearch->date_to  ('2003-08-30');
 $iDebug = 0;
 $iDump = 0;
 &my_test('normal', '"Aomori"', 1, 9, $iDebug, $iDump);
+SKIP_REST:
+exit 0;
 
 sub my_engine
   {

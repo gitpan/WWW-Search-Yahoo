@@ -1,4 +1,4 @@
-# $Id: Echostar.pm,v 1.6 2003-08-28 07:13:02-04 kingpin Exp kingpin $
+# $Id: TV.pm,v 1.0 2003-07-14 21:49:52-04 kingpin Exp kingpin $
 
 =head1 NAME
 
@@ -18,10 +18,31 @@ WWW::Search::Yahoo::TV::Echostar - backend for searching tv.yahoo.com
 This class is a Yahoo specialization of L<WWW::Search>.  It handles
 making and interpreting Yahoo TV searches F<http://tv.yahoo.com>.
 
-=head1 METHODS
+This class exports no public interface; all interaction should
+be done through L<WWW::Search> objects.
 
-In addition to these special methods, this class exports the entire
-L<WWW::Search> interface.
+=head1 NOTES
+
+This backend does a basic keyword search against the Echostar (Dish
+Network) East Coast channel lineup.
+
+=head1 SEE ALSO
+
+To make new back-ends, see L<WWW::Search>.
+
+=head1 BUGS
+
+Please tell the maintainer if you find any!
+
+=head1 AUTHOR
+
+Martin Thurn C<mthurn@cpan.org>
+
+=head1 LEGALESE
+
+THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
+WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 =cut
 
@@ -29,7 +50,6 @@ package WWW::Search::Yahoo::TV::Echostar;
 
 use Carp ();
 use Data::Dumper;  # for debugging only
-use Date::Manip;
 use HTML::TreeBuilder;
 use WWW::Search qw( generic_option strip_tags );
 use WWW::Search::Result;
@@ -39,7 +59,7 @@ use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 
 @ISA = qw( WWW::Search );
-$VERSION = sprintf("%d.%02d", q$Revision: 1.6 $ =~ /(\d+)\.(\d+)/o);
+$VERSION = sprintf("%d.%02d", q$Revision: 1.0 $ =~ /(\d+)\.(\d+)/o);
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 use constant DEBUG_SETUP => 0;
@@ -53,8 +73,6 @@ sub native_setup_search
 
   # www.yahoo.com refuses robots.
   $self->user_agent('non-robot');
-  # We don't care what the time zone really is:
-  &Date_Init(q{TZ=-0500});
 
   $self->{_next_to_retrieve} = 1;
 
@@ -103,32 +121,7 @@ sub native_setup_search
   } # native_setup_search
 
 
-=head2 ignore_channels(@)
-
-The arguments are a list of TV channels
-(by the 3- to 6-letter abbreviation used on Yahoo.com).
-URLs for TV programs on any of these channels will not be returned.
-(But note that approximate_result_count() will still count them!)
-
-For example, if you do not subscribe to HBO, and you don't care about
-network shows on the West Coast, do something like the following
-anytime before calling results() or next_result() or the like:
-
-  $oSearch->ignore_channels(qw( HBO HBOW HBO2E HBO2W KABC KCBS KNBC ));
-
-=cut
-
-sub ignore_channels
-  {
-  my $self = shift;
-  foreach my $sChannel (@_)
-    {
-    $self->{_ignore_channel}->{$sChannel} = 1;
-    } # foreach
-  } # ignore_channels
-
-
-sub preprocess_results_page_OFF
+sub preprocess_results_page
   {
   my $self = shift;
   my $sPage = shift;
@@ -188,15 +181,13 @@ sub parse_tree
           $sEpisode ||= '';
           print STDERR " +   episode==$sEpisode==\n" if (2 <= $self->{_debug});
           print STDERR " +   channel==$sChannel==\n" if (2 <= $self->{_debug});
-          next SMALL_TAG if exists($self->{_ignore_channel}->{$sChannel});
           print STDERR " +   datetime=$sDTG==\n" if (2 <= $self->{_debug});
-          my $sDate = &UnixDate($sDTG, '%A, %b %E at %H:%M');
-          my $sDesc = "$sDate on $sChannel";
-          $sTitle .= qq{ ("$sEpisode")} if ($sEpisode ne '');
           my $oHit = new WWW::Search::Result;
           $oHit->add_url($sURL);
           $oHit->title($sTitle);
-          $oHit->description($sDesc);
+          $oHit->company($sChannel);
+          $oHit->location($sDTG);
+          $oHit->source($sEpisode);
           push(@{$self->{cache}}, $oHit);
           $iHits++;
           next A_TAG;
@@ -210,28 +201,3 @@ sub parse_tree
 1;
 
 __END__
-
-=head1 NOTES
-
-This backend does a basic keyword search against the Echostar (Dish
-Network) East Coast channel lineup.
-
-=head1 SEE ALSO
-
-To make new back-ends, see L<WWW::Search>.
-
-=head1 BUGS
-
-Please tell the author if you find any!
-
-=head1 AUTHOR
-
-Martin Thurn C<mthurn@cpan.org>
-
-=head1 LEGALESE
-
-THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
-WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-
-=cut

@@ -1,4 +1,4 @@
-# $Id: News.pm,v 1.9 2003-07-14 23:25:10-04 kingpin Exp kingpin $
+# $Id: News.pm,v 1.10 2003-07-29 08:58:10-04 kingpin Exp kingpin $
 
 =head1 NAME
 
@@ -80,7 +80,7 @@ package WWW::Search::Yahoo::Japan::News;
 
 @ISA = qw( WWW::Search WWW::Search::Yahoo );
 
-$VERSION = '2.05';
+$VERSION = '2.06';
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 use Data::Dumper; # for debugging only
@@ -104,11 +104,7 @@ sub native_setup_search
                                           @_);
   } # native_setup_search
 
-# On Solaris, it seems that our Japanese pattern-matching FAILS unless
-# we coerce the string-variable containing the webpage like through
-# this function.  So do not remove this function!:
-
-sub preprocess_results_page
+sub preprocess_results_page_OFF
   {
   my $self = shift;
   my $s = shift;
