@@ -83,9 +83,9 @@ print "ok $iTest\n";
 print STDERR "\n\n\n\n" if $debug;
 
 GUI_TEST:
-# This query returns 1 page of results:
+# This GUI query returns 1 page of results:
 $iTest++;
-$sQuery = 'pi','catchu';
+$sQuery = 'pi'.'catchu';
 $oSearch->gui_query(
                     WWW::Search::escape_query($sQuery),
                       { 'search_debug' => $debug, },
@@ -101,7 +101,7 @@ if (($iResults < 2) || (20 < $iResults))
   }
 print "ok $iTest\n";
 
-# This query returns 2 pages of results:
+# This GUI query returns 2 pages of results:
 $iTest++;
 $sQuery = 'ko'.'ngpang';
 $oSearch->gui_query(

@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Wm. L. Scheding and Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 1.33 2000/09/19 17:33:22 mthurn Exp $
+# $Id: Yahoo.pm,v 1.34 2000/09/22 19:21:23 mthurn Exp $
 
 =head1 NAME
 
@@ -68,6 +68,10 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 =head1 VERSION HISTORY
 
 If it''s not listed here, then it wasn''t a meaningful nor released revision.
+
+=head2 2.17, 2000-09-22
+
+fix description parsing and URL parsing
 
 =head2 2.16, 2000-09-19
 
@@ -140,7 +144,7 @@ require Exporter;
 @EXPORT_OK = qw();
 @ISA = qw(WWW::Search Exporter);
 
-$VERSION = '2.16';
+$VERSION = '2.17';
 $MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
 
 use Carp ();
@@ -329,9 +333,10 @@ sub native_retrieve_some
       {
       # Actual line of input is:
       # <LI><A HREF="http://srd.yahoo.com/goo/sushi+restaurant+columbus+ohio/1/*http://www.eastontowncenter.com/hamam1.htm"><b>Restaurant</b> Hama Menu at Easton Town Center in <b>Columbus</b> </A><BR><SMALL>...Center, 160 Easton Town Center, <b>Columbus</b>, <b>Ohio</b> 43219 (614)...<br>
+      # <LI><A HREF="http://srd.yahoo.com/goo/Martin+Thurn/1/*http://www.zdnet.com/tlkbck/comment/22/0,7056,93574-509835,00.html">ZDNet: News: Talkback</A><BR><SMALL>...ZDNet Japan ZDNet China Name: <b>martin</b> <b>thurn</b> Email:...<br>
       print STDERR "gui hit line\n" if 2 <= $self->{_debug};
       my ($sURL, $sTitle, $sDesc) = ($1,$2,$3);
-      if (defined($hit))
+      if (ref($hit))
         {
         $hit->description($sDescription);
         $sDescription = '';
@@ -339,7 +344,7 @@ sub native_retrieve_some
         } # if
       $hit = new WWW::SearchResult;
       # Delete Yahoo-redirect portion of URL:
-      $sURL =~ s!^.+?/\*!!;
+      $sURL = substr($sURL, 1+index($sURL, '*'));
       $hit->add_url($sURL);
       $hit->title(strip_tags($sTitle));
       $sDescription .= strip_tags($sDesc);
@@ -357,32 +362,23 @@ sub native_retrieve_some
       next LINE_OF_INPUT;
       }
 
-    elsif ($state eq $HITS && s@^\s-\s(.+)(\074/UL>|\074LI>)@$2@i)
+    elsif ($state eq $HITS && s@^\s-\s(.+?)(\074/UL>|\074LI>)@$2@i)
       {
       # Actual line of input is:
       #  - Links to many other <b>Star</b> <b>Wars</b> sites as well as some cool original stuff.<LI><A HREF="http://www.geocities.com/Hollywood/Hills/3650/"><b>Star</b> <b>Wars</b>: A New Hope for the Internet</A>
       print STDERR "description line\n" if 2 <= $self->{_debug};
-      $hit->description(strip_tags($1)) if defined($hit);
+      $sDescription .= strip_tags($1);
       # Don't change state, and don't go to the next line! The <LI> on
       # this line is the next hit!
       }
 
-    elsif ($state eq $HITS && m=^(.*?)\074BR>\074cite>=)
+    if ($state eq $HITS && m=^(.*?)\074BR>\074cite>=)
       {
       # Actual line of input is:
       # 
       print STDERR "citation line\n" if 2 <= $self->{_debug};
-      if (ref($hit))
-        {
-        my $sDescrip = '';
-        if (defined($hit->description) and $hit->description ne '')
-          {
-          $sDescrip = $hit->description . ' ';
-          }
-        $sDescrip .= strip_tags($1);
-        $hit->description($sDescrip);
-        $state = $HITS;
-        } # if hit
+      $sDescription .= strip_tags($1);
+      $state = $HITS;
       } # CITATION line
 
     if ($state eq $HEADER && m|^and\s\074b>(\d+)\074/b>\s*$|)
@@ -417,33 +413,38 @@ sub native_retrieve_some
       $self->approximate_result_count($1);
       $state = $HITS;
       }
-
     elsif ($state eq $HEADER && m|^\074UL>|i)
       {
-      $state = $HITS; 
+      $state = $HITS;
       }
 
     elsif ($state eq $HITS &&
-           m|\074LI>\074A HREF=\042([^\042]+)\042>(.*)\074/A>|i) 
+           m|\074LI>\074A HREF=\042([^\042]+)\042>(.*)\074/A>(.+?)\Z|i) 
       {
       # Actual lines of input are:
       # <UL TYPE=disc><LI><A HREF="http://events.yahoo.com/Arts_and_Entertainment/Movies_and_Films/Star_Wars_Series/">Yahoo! Net Events: <b>Star</b> <b>Wars</b> Series</A>
       #  - Links to many other <b>Star</b> <b>Wars</b> sites as well as some cool original stuff.<LI><A HREF="http://www.geocities.com/Hollywood/Hills/3650/"><b>Star</b> <b>Wars</b>: A New Hope for the Internet</A>
-      my ($sURL, $sTitle) = ($1, $2);
+      # <LI><A HREF="http://srd.yahoo.com/goo/Martin+Thurn/2/*http://theoryx5.uwinnipeg.ca/CPAN/by-author/MTHURN.html">CPAN modules for MTHURN [<b>Martin</b> <b>Thurn</b>]</A><BR><SMALL>...modules for MTHURN [<b>Martin</b> <b>Thurn</b>] Bundle-WWW-Search in...
+      my ($sURL, $sTitle, $sDesc) = ($1, $2, $3);
       if ($sURL =~ m/^news:/)
         {
         print STDERR "ignore 'news:' url line\n" if 2 <= $self->{_debug};
         next;
         } # if
       print STDERR "hit url line\n" if 2 <= $self->{_debug};
-      if (defined($hit)) 
+      if (ref($hit))
         {
+        $hit->description($sDescription);
+        $sDescription = '';
         push(@{$self->{cache}}, $hit);
         }
       $hit = new WWW::SearchResult;
+      # Delete Yahoo-redirect portion of URL:
+      $sURL = substr($sURL, 1+index($sURL, '*'));
       $hit->add_url($sURL);
       $hits_found++;
       $hit->title(strip_tags($sTitle));
+      $sDescription .= strip_tags($sDesc);
       }
  
     elsif ($state eq $HITS && m@\074a\shref=\"([^"]+)\">(Next|\264\331\300\275)\s*\d+@i)
@@ -471,9 +472,9 @@ sub native_retrieve_some
     # Reached end of page without seeing "Next" button
     $self->{_next_url} = undef;
     } # if
-  if (defined($hit))
+  if (ref($hit))
     {
-        $hit->description($sDescription);
+    $hit->description($sDescription);
     push(@{$self->{cache}}, $hit);
     } # if
   return $hits_found;
