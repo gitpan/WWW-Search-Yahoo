@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Wm. L. Scheding and Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 1.25 2000/03/27 16:27:55 mthurn Exp $
+# $Id: Yahoo.pm,v 1.27 2000/04/27 17:23:55 mthurn Exp $
 
 =head1 NAME
 
@@ -69,6 +69,10 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 If it''s not listed here, then it wasn''t a meaningful nor released revision.
 
+=head2 2.11, 2000-04-27
+
+new URL for gui_query
+
 =head2 2.09, 2000-03-27
 
 fixed for new CGI options
@@ -124,7 +128,7 @@ require Exporter;
 @EXPORT_OK = qw();
 @ISA = qw(WWW::Search Exporter);
 
-$VERSION = '2.09';
+$VERSION = '2.11';
 $MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
 
 use Carp ();
@@ -136,7 +140,7 @@ sub gui_query
   # actual URL as of 2000-03-27 is
   # http://search.yahoo.com/bin/search?p=sushi+restaurant+Columbus+Ohio
   my ($self, $sQuery, $rh) = @_;
-  $self->{'search_base_url'} = 'http://search.yahoo.com';
+  $self->{'search_base_url'} = 'http://ink.yahoo.com';
   $self->{'_options'} = {
                          'search_url' => $self->{'search_base_url'} .'/bin/search',
                          'p' => $sQuery,
@@ -321,7 +325,7 @@ sub native_retrieve_some
       {
       print STDERR "header count line (korea)\n" if 2 <= $self->{_debug};
       # Actual line of input from Yahoo Korea:
-      # <CENTER><FONT SIZE="+1"><B>$(B"="i"B"N"H"0(B $(B"2"M"="x"2"c"2"|(B &nbsp; <FONT SIZE="-1">(1&nbsp;-&nbsp;84&nbsp;/&nbsp;114)</FONT></B></FONT></CENTER>
+      # <CENTER><FONT SIZE="+1"><B>$B"="i"B"N"H"0(B $B"2"M"="x"2"c"2"|(B &nbsp; <FONT SIZE="-1">(1&nbsp;-&nbsp;84&nbsp;/&nbsp;114)</FONT></B></FONT></CENTER>
       $self->approximate_result_count($1);
       $state = $HITS;
       }
@@ -359,7 +363,7 @@ sub native_retrieve_some
       {
       print STDERR "next line\n" if 2 <= $self->{_debug};
       # Actual line of input from Yahoo Korea:
-      # <a href="/bin/search?&d=y&n=84&o=1&p=moon&za=or&hc=3&hs=114&h=s&b=85">$(B"6"["B"?(B 30$(B"2"5"B"I(B $(B"2"M"="x"2"c"2"|(B</a>
+      # <a href="/bin/search?&d=y&n=84&o=1&p=moon&za=or&hc=3&hs=114&h=s&b=85">$B"6"["B"?(B 30$B"2"5"B"I(B $B"2"M"="x"2"c"2"|(B</a>
       # There is a "next" button on this page, therefore there are
       # indeed more results for us to go after next time.
       my $sURL = $1;

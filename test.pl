@@ -40,10 +40,12 @@ $oSearch->native_query($WWW::Search::Test::bogus_query);
 $iResults = scalar(@aoResults);
 print STDOUT (0 < $iResults) ? 'not ' : '';
 print "ok $iTest\n";
+print STDERR "\n\n\n\n" if $debug;
 
 # This query returns 1 page of results:
 $iTest++;
-$oSearch->native_query(WWW::Search::escape_query('LS'.'AM repl'.'ication'),
+$oSearch->native_query(
+                       WWW::Search::escape_query('LS'.'AM repl'.'ication'),
                       { 'search_debug' => $debug, },
                       );
 @aoResults = $oSearch->results();
@@ -55,13 +57,15 @@ if (($iResults < 2) || (84 < $iResults))
   print STDOUT 'not ';
   }
 print "ok $iTest\n";
+print STDERR "\n\n\n\n" if $debug;
 
 # goto GUI_TEST;
 
 MULTI_TEST:
 # This query returns MANY pages of results:
 $iTest++;
-$oSearch->native_query(WWW::Search::escape_query('pok'.'emon'),
+$oSearch->native_query(
+                       WWW::Search::escape_query('pok'.'emon'),
                       { 'search_debug' => $debug, },
                       );
 $oSearch->maximum_to_retrieve(39); # 2 pages
@@ -74,21 +78,22 @@ if (($iResults < 22))
   print STDOUT 'not ';
   }
 print "ok $iTest\n";
+print STDERR "\n\n\n\n" if $debug;
 
 GUI_TEST:
 # This query returns 1 page of results:
 $iTest++;
 $oSearch->gui_query(
-                    WWW::Search::escape_query('LS'.'AM'),
+                    WWW::Search::escape_query('ko'.'ngpang'),
                       { 'search_debug' => $debug, },
                    );
 $oSearch->maximum_to_retrieve(30);
 @aoResults = $oSearch->results();
 $iResults = scalar(@aoResults);
-# print STDERR " + got $iResults GUI results for LS","AM\n";
-if (($iResults < 5) || (25 < $iResults))
+# print STDERR " + got $iResults GUI results for ko","ngpang\n";
+if (($iResults < 2) || (20 < $iResults))
   {
-  print STDERR " --- got $iResults GUI results for 'LS","AM', but expected 5..25\n";
+  print STDERR " --- got $iResults GUI results for 'ko","ngpang', but expected 2..20\n";
   print STDOUT 'not ';
   }
 print "ok $iTest\n";
