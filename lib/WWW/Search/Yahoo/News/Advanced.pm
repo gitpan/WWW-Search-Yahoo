@@ -1,5 +1,5 @@
 
-# $Id: Advanced.pm,v 2.7 2004/03/29 01:39:43 Daddy Exp Daddy $
+# $Id: Advanced.pm,v 2.51 2004/03/30 02:28:17 Daddy Exp $
 
 =head1 NAME
 
@@ -64,9 +64,9 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 =head1 VERSION HISTORY
 
-If it''s not listed here, then it wasn''t a meaningful nor released revision.
+If it's not listed here, then it wasn't a meaningful nor released revision.
 
-=head2 2.007, 2004-03-27
+=head2 2.051, 2004-03-27
 
 overhaul for new webpage format
 
@@ -97,7 +97,7 @@ use WWW::Search::Yahoo;
 use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
-$VERSION = do { my @r = (q$Revision: 2.7 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.51 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub native_setup_search
@@ -157,130 +157,6 @@ sub native_setup_search
   # print STDERR " +   Yahoo::UK::native_setup_search() is calling SUPER::native_setup_search()...\n";
   return $self->SUPER::native_setup_search($sQuery, $rh);
   } # native_setup_search
-
-
-sub preprocess_results_page_UNUSED
-  {
-  my $self = shift;
-  my $s = shift;
-  print STDERR " + News::Advanced::preprocess()\n" if $self->{_debug};
-  # Remove all carriage-returns:
-  $s =~ tr!\r\n!!d;
-  # Convert nbsp to plain space:
-  $s =~ s!&nbsp;! !g;
-  # Delete bold tags which appear around the query terms in the descriptions:
-  $s =~ s!</?b>!!gi;
-  # Insert carriage-return before every HTML tag:
-  $s =~ s!(</?\w)!\n$1!g;
-  # Insert carriage-return after every HTML tag:
-  $s =~ s!(\S>)!$1\n!g;
-  # Delete blank lines:
-  $s =~ s!\n\s*\n!\n!g;
-  $s =~ s!\n\s*\n!\n!g;
-  if (0)
-    {
-    print STDERR $s;
-    # exit 9;
-    } # if
-  return $s;
-  } # preprocess_results_page
-
-
-sub native_retrieve_some_UNUSED
-  {
-  my $self = shift;
-  # printf STDERR (" +   %s::native_retrieve_some()\n", __PACKAGE__) if $self->{_debug};
-  # fast exit if already done
-  return undef if (!defined($self->{_next_url}));
-  # If this is not the first page of results, sleep so as to not overload the server:
-  $self->user_agent_delay if 1 < $self->{'_next_to_retrieve'};
-  # Get one page of results:
-  print STDERR " +   submitting URL (", $self->{'_next_url'}, ")\n" if $self->{_debug};
-  my $response = $self->http_request($self->http_method, $self->{'_next_url'});
-  print STDERR " +     got response\n", $response->headers->as_string, "\n" if 2 <= $self->{_debug};
-  $self->{_prev_url} = $self->{_next_url};
-  # Assume there are no more results, unless we find out otherwise
-  # when we parse the html:
-  $self->{_next_url} = undef;
-  $self->{response} = $response;
-  print STDERR " --- HTTP response is:\n", $response->as_string if 4 < $self->{_debug};
-  if (! $response->is_success)
-    {
-    if ($self->{_debug})
-      {
-      print STDERR " --- HTTP request failed, response is:\n", $response->as_string;
-      } # if
-    return undef;
-    } # if
-  # Pre-process the output:
-  my $sPage = $self->preprocess_results_page($response->content);
-  # ABOVE WAS COPIED FROM WWW::Search::native_retrieve_some()
-  print STDERR " +   cooked results page ==========$sPage==========\n" if (5 < $self->{_debug});
-  # Parse the output:
-  my $hits_found = 0;
-  my @asLine = $self->split_lines($sPage);
-  chomp @asLine;
- LINE:
-  while (defined(my $sLine = shift @asLine))
-    {
-    if (($self->approximate_result_count == 0)
-        &&
-        ($sLine =~ m!\A\s*\d+\s*-\s*\d+\s+(?:out\s+)?of\s+(\d+)!))
-      {
-      my $iCount = $1;
-      print STDERR " +   found number $iCount\n" if 2 <= $self->{_debug};
-      $self->approximate_result_count($iCount);
-      my $sLine = shift @asLine;
-      $self->{_next_url} = $1 if ($sLine =~ m!<a href="(.+search\.news\.yahoo\.com.+)">!);
-      next LINE;
-      } # if
-    next LINE unless (
-                      ($sLine =~ m!<a href="(.+tmpl=story.+)">!)
-                      ||
-                      ($sLine =~ m!<a href="(.+moreover\.com/click/here.+)">!)
-                      ||
-                      ($sLine =~ m!<a href="(.+biz\.yahoo\.com.+)">!)
-                     );
-    my $sURL = $1;
-    print STDERR " +   found url ==$sURL==\n" if 2 <= $self->{_debug};
-    my $sTitle = shift @asLine;
-    $sTitle = &WWW::Search::strip_tags(shift @asLine);
-    next LINE unless ($sTitle ne '');
-    print STDERR " +   found title ==$sTitle==\n" if 2 <= $self->{_debug};
-    my $sDate = '';
-    if ($self->lookfor('</u>', \@asLine))
-      {
-      $sDate = shift @asLine;
-      } # if
-    print STDERR " +   found raw date ==$sDate==\n" if 2 <= $self->{_debug};
-    $sDate =~ s!\s*-\s+!!;
-    print STDERR " +   cooked    date ==$sDate==\n" if 2 <= $self->{_debug};
-    my $sDesc = shift @asLine;
-    $sDesc = shift @asLine;
-    print STDERR " +   found description ==$sDesc==\n" if 2 <= $self->{_debug};
-    my $hit = new WWW::Search::Result;
-    $hit->add_url($sURL);
-    $hit->title($sTitle);
-    $hit->description($sDesc);
-    $hit->change_date($sDate);
-    push(@{$self->{cache}}, $hit);
-    $self->{'_num_hits'}++;
-    $hits_found++;
-    } # foreach
-  return $hits_found;
-  } # native_retrieve_some
-
-sub lookfor_UNUSED
-  {
-  my $self = shift;
-  my ($sPattern, $ras) = @_;
-  while (defined(my $s = shift @$ras))
-    {
-    return $s if ($s =~ m!$sPattern!);
-    } # while
-  # Ran off end of array?
-  return undef;
-  } # lookfor
 
 
 sub parse_tree
@@ -361,23 +237,6 @@ A_TAG:
   return $hits_found;
   } # parse_tree
 
-
-sub skip_text_elements_UNUSED
-  {
-  my $ra = shift;
-  my $o;
-  # print STDERR " +     skip_text_elements\n";
-  while (1)
-    {
-    $o = shift(@$ra);
-    # Bail if we run out of arguments:
-    last unless ref($o);
-    # print STDERR (" +     consider o==%s", $o->as_HTML);
-    # All done if we get something not text:
-    last if ($o->tag ne '~text');
-    } # while
-  return $o;
-  } # skip_text_elements
 
 1;
 
