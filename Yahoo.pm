@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Wm. L. Scheding and Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 1.31 2000/07/05 20:11:34 mthurn Exp $
+# $Id: Yahoo.pm,v 1.32 2000/09/14 16:51:10 mthurn Exp $
 
 =head1 NAME
 
@@ -69,6 +69,10 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 If it''s not listed here, then it wasn''t a meaningful nor released revision.
 
+=head2 2.15, 2000-09-14
+
+fix result-count parsing
+
 =head2 2.14, 2000-07-05
 
 output format changed (thanks to Bin Yu for fixes)
@@ -132,7 +136,7 @@ require Exporter;
 @EXPORT_OK = qw();
 @ISA = qw(WWW::Search Exporter);
 
-$VERSION = '2.14';
+$VERSION = '2.15';
 $MAINTAINER = 'Martin Thurn <MartinThurn@iname.com>';
 
 use Carp ();
@@ -367,7 +371,9 @@ sub native_retrieve_some
       $self->approximate_result_count($1);
       $state = $HITS;
       }
-    elsif ($state eq $HEADER && m|\074b>\(\d+-\d+\s+of\s+(\d+)\)\074/b>|)
+    elsif (($state eq $HEADER) && (m|\074b>\(\d+-\d+\s+of\s+(\d+)\)\074/b>|i
+                                   ||
+                                   m!^(\d+)\)</small></b></font>!i))
       {
       print STDERR "header count line\n" if 2 <= $self->{_debug};
       # Actual line of input:

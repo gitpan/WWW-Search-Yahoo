@@ -1,3 +1,11 @@
+2000-09-15
+	
+	* VERSION 2.15 RELEASED
+	
+2000-09-14  Kingpin  <mthurn@tasc.com>
+
+	* Yahoo.pm (native_retrieve_some): fix result-count parsing
+
 2000-07-05  Kingpin  <mthurn@tasc.com>
 
 	* VERSION 2.14 RELEASED
