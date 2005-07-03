@@ -1,3 +1,7 @@
+2005-07-02  Kingpin  <mthurn@verizon.net>
+
+	* lib/WWW/Search/Yahoo.pm (parse_tree): fix for next-page url when query contains "http:"
+
 2004-09-25  Kingpin  <mthurn@verizon.net>
 
 	* t/japan-news.t: use Encode instead of Jcode

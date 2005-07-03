@@ -1,3 +1,6 @@
+
+# $Id: news-advanced.t,v 1.16 2005/07/03 19:36:51 Daddy Exp $
+
 use ExtUtils::testlib;
 use Test::More no_plan;
 
@@ -28,7 +31,7 @@ $iDump = 0;
 diag("Sending multi-page query to news.yahoo.com...");
 $iDebug = 0;
 $iDump = 0;
-&tm_run_test('normal', 'Japan', 55, undef, $iDebug, $iDump);
+&tm_run_test('normal', 'Japan', 51, undef, $iDebug, $iDump);
 exit 0;
 
 ;
@@ -46,3 +49,4 @@ SKIP_REST:
 exit 0;
 
 __END__
+

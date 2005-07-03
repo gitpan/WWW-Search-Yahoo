@@ -16,6 +16,7 @@ $iDump = 0;
 # This query returns 1 page of results:
 &tm_run_test('normal', 'Tina Fey', 1, 24, $iDebug, $iDump);
 $WWW::Search::Test::oSearch->ignore_channels(qw( ETV KNBC ));
-&tm_run_test('normal', 'Tina Fey', 1, 9, $iDebug, $iDump);
+&tm_run_test('normal', 'Tina Fey', 1, 19, $iDebug, $iDump);
 
 __END__
+

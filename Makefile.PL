@@ -2,7 +2,7 @@
 use inc::Module::Install;
 
 name('WWW-Search-Yahoo');
-version(2.401);
+version(2.402);
 
 author('Martin Thurn <mthurn@cpan.org>');
 license('perl');
@@ -25,3 +25,5 @@ build_requires('WWW::Search::Test' => 2.265);
 
 check_nmake();      # check and download nmake.exe for Win32
 &Makefile->write;
+__END__
+

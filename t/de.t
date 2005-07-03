@@ -24,7 +24,7 @@ $iDebug = 0;
 $iDump = 0;
 # This query returns 1 page of results:
 diag("Sending 1-page query to de.yahoo.com...");
-&tm_run_test('normal', 'wiz'.'radry', 1, 99, $iDebug, $iDump);
+&tm_run_test('normal', 'wiz'.'ardrry', 1, 99, $iDebug, $iDump);
 my @ao = $WWW::Search::Test::oSearch->results();
 cmp_ok(0, '<', scalar(@ao), 'got any results');
 foreach my $oResult (@ao)
@@ -49,3 +49,4 @@ ALL_DONE:
 exit 0;
 
 __END__
+

@@ -1,3 +1,6 @@
+
+# $Id: gui.t,v 1.11 2005/07/03 19:36:51 Daddy Exp $
+
 use ExtUtils::testlib;
 use Test::More no_plan;
 
@@ -15,7 +18,7 @@ $iDebug = 0;
 diag("Sending 1-page query to yahoo.com...");
 # This GUI query returns 1 page of results:
 $iDebug = 0;
-&tm_run_test('gui', 'wizr'.'adry', 1, 19, $iDebug);
+&tm_run_test('gui', 'wiz'.'ardrry', 1, 19, $iDebug);
 MULTI:
 diag("Sending multi-page query to yahoo.com...");
 $iDebug = 0;
@@ -25,3 +28,4 @@ $iDebug = 0;
 exit 0;
 
 __END__
+
