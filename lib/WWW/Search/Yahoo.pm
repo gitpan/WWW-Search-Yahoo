@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 2.361 2005/07/03 01:19:51 Daddy Exp $
+# $Id: Yahoo.pm,v 2.362 2005/10/24 11:48:43 Daddy Exp $
 
 =head1 NAME
 
@@ -114,7 +114,7 @@ use vars qw( $VERSION $MAINTAINER @ISA );
 use vars qw( $iMustPause );
 
 @ISA = qw( WWW::Search );
-$VERSION = do { my @r = (q$Revision: 2.361 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.362 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 # Thanks to the hard work of Gil Vidals and his team at
@@ -332,12 +332,14 @@ sub parse_tree
     printf STDERR (" +   next A ==%s==\n", $sAhtml) if (2 <= $self->{_debug});
     if ($self->_a_is_next_link($oA))
       {
+      # Here is an example of a raw next URL:
+      # http://rds.yahoo.com/;_ylt=AutpqXFv9tv2eTXen2Mw_c1XNyoA;_ylu=X3oDMTExN2UzODg3BGNvbG8DdwRzZWMDcGFnaW5hdGlvbgR2dGlkA0RGWDJfOQ--/SIG=19e131ad9/EXP=1130207429/**http%3A%2F%2Fsearch.yahoo.com%2Fsearch%3Fn%3D100%26vo%3Dpokemon%26ei%3DUTF-8%26xargs%3D12KPjg1hVSt4GmmvmnCOObHb%255F%252Dvj0Zlpi3g5UzTYR6a9RL8nQJDqADN%255F2aP%255FdLHL9y7XrQ0JOkvqV2HOs3qODiIxkSdWH8UbKsmJS5%255FIp9DLfdaXlzsbIu0%252Djv3NcQZy8nLl2qbeONz73ZI6L5Hk57%26pstart%3D6%26b%3D101
       my $sURL = $oA->attr('href');
       print STDERR " +   raw     next URL ==$sURL==\n" if (2 <= $self->{_debug});
       # Delete Yahoo-redirect portion of URL:
       $sURL =~ s!\A.+?[-*]+(?=http)!!;
       print STDERR " +   poached next URL ==$sURL==\n" if (2 <= $self->{_debug});
-      $sURL =~ s!\Ahttp%3A!http:!i;
+      $sURL = WWW::Search::unescape_query($sURL);
       $self->{_next_url} = $self->absurl($self->{'_prev_url'}, $sURL);
       print STDERR " +   cooked  next URL ==$self->{_next_url}==\n" if (2 <= $self->{_debug});
       last NEXT_A;

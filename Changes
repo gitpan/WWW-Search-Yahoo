@@ -1,3 +1,9 @@
+2005-10-24    <Daddy@C-3PO>
+
+	* lib/WWW/Search/Yahoo/China.pm: add pod about UTF-8
+
+	* Yahoo.pm (parse_tree): fix next_url demangling
+
 2005-07-02  Kingpin  <mthurn@verizon.net>
 
 	* lib/WWW/Search/Yahoo.pm (parse_tree): fix for next-page url when query contains "http:"

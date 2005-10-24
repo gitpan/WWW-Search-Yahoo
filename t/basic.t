@@ -21,7 +21,7 @@ $iDebug = 0;
 $iDump = 0;
 # This query returns 1 page of results:
 diag("Sending 1-page query to yahoo.com...");
-&tm_run_test('normal', 'pi'.'kaku', 1, 99, $iDebug, $iDump);
+&tm_run_test('normal', 'res'.'sultant', 1, 99, $iDebug, $iDump);
 my @ao = $WWW::Search::Test::oSearch->results();
 my $iCount = scalar(@ao);
 my $iCountDesc = 0;

@@ -1,0 +1,22 @@
+name: WWW-Search-Yahoo
+version: 2.404
+author: Martin Thurn <mthurn@cpan.org>
+license: perl
+distribution_type: module
+build_requires:
+  Encode: 0
+  I18N::Charset: 0
+  Test::More: 0
+  WWW::Search::Test: 2.265
+requires:
+  perl: 5.004
+  Data::Dumper: 0
+  Date::Manip: 0
+  HTML::TreeBuilder: 0
+  URI: 0
+  URI::Escape: 0
+  WWW::Search: 2.523
+no_index:
+  directory:
+    - inc
+generated_by: Module::Install version 0.37
