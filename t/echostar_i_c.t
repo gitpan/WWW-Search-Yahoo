@@ -1,3 +1,6 @@
+
+# $Id: echostar_i_c.t,v 1.8 2006/04/24 21:44:12 Daddy Exp $
+
 use ExtUtils::testlib;
 use Test::More no_plan;
 

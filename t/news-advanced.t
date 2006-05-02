@@ -1,5 +1,5 @@
 
-# $Id: news-advanced.t,v 1.16 2005/07/03 19:36:51 Daddy Exp $
+# $Id: news-advanced.t,v 1.17 2006/05/01 19:17:13 Daddy Exp $
 
 use ExtUtils::testlib;
 use Test::More no_plan;
@@ -18,16 +18,19 @@ NEWS_ADVANCED_TEST:
 &tm_new_engine('Yahoo::News::Advanced');
 
 # goto DEBUG_NOW;
+
 # This test returns no results (but we should not get an HTTP error):
 diag("Sending 0-page query to news.yahoo.com...");
 $iDebug = 0;
 $iDump = 0;
 &tm_run_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug);
+
 diag("Sending 1-page query to news.yahoo.com...");
-DEBUG_NOW:
 $iDebug = 0;
 $iDump = 0;
 &tm_run_test('normal', 'thurn', 1, 99, $iDebug, $iDump);
+
+DEBUG_NOW:
 diag("Sending multi-page query to news.yahoo.com...");
 $iDebug = 0;
 $iDump = 0;

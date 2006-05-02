@@ -18,8 +18,9 @@ diag("Sending 0-page query to cn.yahoo.com...");
 $iDebug = 0;
 $iDump = 0;
 &tm_run_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug, $iDump);
+# exit 99; # for testing
 TEST_NOW:
-$iDebug = 1;
+$iDebug = 0;
 $iDump = 0;
 # This query returns 1 page of results:
 diag("Sending 1-page query to cn.yahoo.com...");

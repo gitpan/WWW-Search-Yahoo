@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 2.362 2005/10/24 11:48:43 Daddy Exp $
+# $Id: Yahoo.pm,v 2.364 2006/05/01 03:07:45 Daddy Exp $
 
 =head1 NAME
 
@@ -114,7 +114,7 @@ use vars qw( $VERSION $MAINTAINER @ISA );
 use vars qw( $iMustPause );
 
 @ISA = qw( WWW::Search );
-$VERSION = do { my @r = (q$Revision: 2.362 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.364 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 # Thanks to the hard work of Gil Vidals and his team at
@@ -224,17 +224,25 @@ sub preprocess_results_page
   {
   my $self = shift;
   my $sPage = shift;
-  # goto PRP_DEBUG;
+  if ($self->{_debug} == 77)
+    {
+    # For debugging only.  Print the page contents and abort.
+    print STDERR $sPage;
+    exit 88;
+    } # if
   # Delete the <BASE> tag that appears BEFORE the <html> tag (because
   # it causes HTML::TreeBuilder to NOT be able to parse it!)
   $sPage =~ s!<BASE\s[^>]+>!!;
   return $sPage;
-  # For debugging only.  Print the page contents and abort.
- PRP_DEBUG:
-  print STDERR $sPage;
-  exit 88;
   } # preprocess_results_page
 
+
+sub _result_list_tags
+  {
+  return (_tag => 'li');
+  } # _result_list_tags
+
+my $WS = q{[\t\r\n\240\ ]};
 
 sub parse_tree
   {
@@ -245,7 +253,6 @@ sub parse_tree
   # fetching another.
   $iMustPause++;
   my $hits_found = 0;
-  my $WS = q{[\t\r\n\240\ ]};
   # Only try to parse the hit count if we haven't done so already:
   print STDERR " + start, approx_h_c is ==", $self->approximate_hit_count(), "==\n" if (2 <= $self->{_debug});
   if ($self->approximate_hit_count() < 1)
@@ -270,7 +277,7 @@ sub parse_tree
     } # if
   print STDERR " + found approx_h_c is ==", $self->approximate_hit_count(), "==\n" if (2 <= $self->{_debug});
 
-  my @aoLI = $oTree->look_down(_tag => 'li');
+  my @aoLI = $oTree->look_down($self->_result_list_tags);
  LI_TAG:
   foreach my $oLI (@aoLI)
     {
@@ -333,6 +340,7 @@ sub parse_tree
     if ($self->_a_is_next_link($oA))
       {
       # Here is an example of a raw next URL:
+      # http://rds.yahoo.com/_ylt=A0Je5ra.FlVEwsQA1RhXNyoA/SIG=13517q7d2/EXP=1146513470/**http%3a//search.yahoo.com/search%3fn=100%26vo=pokemon%26ei=UTF-8%26pstart=1%26b=101
       # http://rds.yahoo.com/;_ylt=AutpqXFv9tv2eTXen2Mw_c1XNyoA;_ylu=X3oDMTExN2UzODg3BGNvbG8DdwRzZWMDcGFnaW5hdGlvbgR2dGlkA0RGWDJfOQ--/SIG=19e131ad9/EXP=1130207429/**http%3A%2F%2Fsearch.yahoo.com%2Fsearch%3Fn%3D100%26vo%3Dpokemon%26ei%3DUTF-8%26xargs%3D12KPjg1hVSt4GmmvmnCOObHb%255F%252Dvj0Zlpi3g5UzTYR6a9RL8nQJDqADN%255F2aP%255FdLHL9y7XrQ0JOkvqV2HOs3qODiIxkSdWH8UbKsmJS5%255FIp9DLfdaXlzsbIu0%252Djv3NcQZy8nLl2qbeONz73ZI6L5Hk57%26pstart%3D6%26b%3D101
       my $sURL = $oA->attr('href');
       print STDERR " +   raw     next URL ==$sURL==\n" if (2 <= $self->{_debug});
@@ -372,15 +380,17 @@ sub _a_is_next_link
   my $self = shift;
   my $oA = shift;
   return 0 unless (ref $oA);
-  return ($oA->as_text eq 'Next');
+  my $s = $oA->as_text;
+  print STDERR " +     next A as_text ==$s==\n" if (2 <= $self->{_debug});
+  return ($s =~ m!\A$WS*Next$WS*\Z!i);
   } # _a_is_next_link
 
 sub strip
   {
   my $self = shift;
   my $s = &WWW::Search::strip_tags(shift);
-  $s =~ s!\A[\240\t\r\n\ ]+  !!x;
-  $s =~ s!  [\240\t\r\n\ ]+\Z!!x;
+  $s =~ s!\A$WS+  !!x;
+  $s =~ s!  $WS+\Z!!x;
   return $s;
   } # strip
 
@@ -403,3 +413,4 @@ _next_url :
 
 http://google.yahoo.com/bin/query?%0Ap=%22Shelagh+Fraser%22&b=21&hc=0&hs=0&xargs=
 
+http://rds.yahoo.com/_ylt=A0Je5ra.FlVEwsQA1RhXNyoA/SIG=13517q7d2/EXP=1146513470/**http%3a//search.yahoo.com/search%3fn=100%26vo=pokemon%26ei=UTF-8%26pstart=1%26b=101

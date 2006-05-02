@@ -1,6 +1,6 @@
 # China.pm
 # by Martin Thurn
-# $Id: China.pm,v 2.6 2005/10/24 11:52:12 Daddy Exp $
+# $Id: China.pm,v 2.7 2006/05/01 03:34:41 Daddy Exp $
 
 =head1 NAME
 
@@ -65,7 +65,7 @@ use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
 
-$VERSION = do { my @r = (q$Revision: 2.6 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.7 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub native_setup_search
@@ -91,6 +91,14 @@ sub _string_has_count
   return $1 if ($s =~ m!\bof\s+(?:about\s+)?([,0-9]+)!i);
   return -1;
   } # _string_has_count
+
+sub _result_list_tags
+  {
+  return (
+          _tag => 'div',
+          class => 'rts',
+         );
+  } # _result_list_tags
 
 sub _a_is_next_link
   {

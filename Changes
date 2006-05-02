@@ -1,3 +1,15 @@
+2006-05-01    <Daddy@C-3PO>
+
+	* lib/WWW/Search/Yahoo/China.pm (_result_list_tags): FIX for returning yahoo links as results
+	
+	* lib/WWW/Search/Yahoo/DE.pm (_result_list_tags): FIX for returning yahoo links as results
+
+	* lib/WWW/Search/Yahoo/News/Advanced.pm (parse_tree): FIX for parsing result count with commas
+
+2006-04-30    <Daddy@C-3PO>
+
+	* lib/WWW/Search/Yahoo.pm (_result_list_tags): new private method
+
 2005-10-24    <Daddy@C-3PO>
 
 	* lib/WWW/Search/Yahoo/China.pm: add pod about UTF-8
