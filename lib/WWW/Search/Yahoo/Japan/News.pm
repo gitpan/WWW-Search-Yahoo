@@ -73,17 +73,18 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 package WWW::Search::Yahoo::Japan::News;
 
-@ISA = qw( WWW::Search WWW::Search::Yahoo );
+use strict;
 
+use base 'WWW::Search::Yahoo';
+
+my
 $VERSION = do { my @r = (q$Revision: 2.65 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
-$MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
+my $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 use Data::Dumper; # for debugging only
 use WWW::Search qw( strip_tags );
 use WWW::SearchResult;
 use WWW::Search::Yahoo;
-
-use strict;
 
 sub native_setup_search
   {
@@ -149,72 +150,40 @@ sub parse_tree
       } # if
     } # foreach
 
-  # Each result is in a <P>, but HTML::Parser can not parse those <P>s
-  # because the first one is mal-formed (contains a <BASE> tag which
-  # is not legal inside a <P>).  So, just look for <A> with a <SMALL>
-  # sibling.
-  my @aoA = $tree->look_down('_tag', 'a');
- A_TAG:
-  foreach my $oA (@aoA)
+  my @aoSPANurl = $tree->look_down(_tag => 'span',
+                                   class => 'yjMt');
+  my @aoSPANdate = $tree->look_down(_tag => 'span',
+                                    class => 'fcg yjSt');
+  my @aoSPANdesc = $tree->look_down(_tag => 'span',
+                                    class => 'yjSt');
+ SPAN:
+  while (my $oSPANurl = shift @aoSPANurl)
     {
-    next A_TAG unless ref $oA;
-    if (2 <= $self->{_debug})
-      {
-      my $s = $oA->as_HTML;
-      print STDERR " +   A ===$s===\n";
-      } # if debug
-    # Result <A> must have a <SMALL> sibling with a <BR> in between:
-    my $iSawBR = 0;
-    my $oSMALL;
-    my @aoSib = $oA->right;
- SIBLING:
-    foreach my $oSib (@aoSib)
-      {
-      # Sanity check:
-      next SIBLING unless defined $oSib;
-      print STDERR " +     try oSMALL ==$oSib==\n" if (3 <= $self->{_debug});
-      # Skip over plain text elements:
-      next SIBLING unless ref $oSib;
-      print STDERR " +         oSMALL ==", $oSib->as_HTML, "==\n" if (3 <= $self->{_debug});
-      if ($oSib->tag eq 'br')
-        {
-        $iSawBR = 1;
-        } # if
-      if ($oSib->tag eq 'small')
-        {
-        $oSMALL = $oSib;
-        last SIBLING;
-        } # if
-      } # foreach
-    # Does this <A> have a <BR> sibling?
-    next A_TAG unless $iSawBR;
-    # Does this <A> have a <SMALL> sibling?
-    print STDERR " +   after loop, oSMALL ==$oSMALL==\n" if (3 <= $self->{_debug});
-    next A_TAG unless ref $oSMALL;
-    print STDERR " +   after loop, oSMALL ==", $oSMALL->as_HTML, "==\n" if (3 <= $self->{_debug});
-    next A_TAG unless ($oSMALL->tag eq 'small');
-    if (2 <= $self->{_debug})
-      {
-      my $s = $oSMALL->as_HTML;
-      print STDERR " +   SMALL ===$s===\n\n";
-      } # if debug
+    my $oSPANdate = shift @aoSPANdate;
+    my $oSPANdesc = shift @aoSPANdesc;
+    my $oA = $oSPANurl->look_down(_tag => 'a');
+    next SPAN unless ref $oA;
     my $sURL = $oA->attr('href') || '';
     next A_TAG unless $sURL ne '';
-    $sURL = $self->absurl($self->{'_prev_url'}, $sURL);
-    # Ignore yahoo.co.jp links that look like hit results:
-    my $sSelf = $self->{'search_base_url'};
-    next A_TAG if ($sURL =~ m!\A$sSelf!);
     my $sTitle = $oA->as_text;
-    my $sDesc = &strip_tags($oSMALL->as_text);
+    my ($sSource, $sDate, $sCategory) = split(' - ', $oSPANdate->as_text);
+    $sDate =~ s!\(.+\)! !;
+    $sDate =~ s!年!-!;
+    $sDate =~ s!月!-!;
+    $sDate =~ s!(\d+)時(\d+)分!sprintf('%d:%2d', $1, $2)!e;
+    # If the article has a photo, the description is in an embedded
+    # table rather than a <span>!  And then our parallel arrays will
+    # be all out of whack.  Sorry folks!
+    my $sDesc = '';
     my $hit = new WWW::SearchResult;
     $hit->add_url($sURL);
     $hit->title($sTitle);
     $hit->description($sDesc);
+    $hit->change_date($sDate);
     push(@{$self->{cache}}, $hit);
     $self->{'_num_hits'}++;
     $hits_found++;
-    } # foreach
-  print STDERR " +   found $hits_found results on this page\n" if (2 <= $self->{_debug});
+    } # while SPAN
   return $hits_found;
   } # parse_tree
 

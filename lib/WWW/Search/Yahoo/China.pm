@@ -1,6 +1,6 @@
 # China.pm
 # by Martin Thurn
-# $Id: China.pm,v 2.7 2006/05/01 03:34:41 Daddy Exp $
+# $Id: China.pm,v 2.8 2007/04/02 00:28:09 Daddy Exp $
 
 =head1 NAME
 
@@ -65,7 +65,7 @@ use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
 
-$VERSION = do { my @r = (q$Revision: 2.7 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.8 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub native_setup_search
@@ -96,7 +96,7 @@ sub _result_list_tags
   {
   return (
           _tag => 'div',
-          class => 'rts',
+          class => 'i',
          );
   } # _result_list_tags
 
@@ -110,6 +110,48 @@ sub _a_is_next_link
   # to this ugliness:
   return ($oA->as_HTML =~ m!&Iuml;&Acirc;&Ograve;&raquo;&Ograve;&sup3;!i);
   } # _a_is_next_link
+
+sub parse_details
+  {
+  my $self = shift;
+  # Required arg1 = (part of) an HTML parse tree:
+  my $oLI = shift;
+  # Required arg2 = a WWW::SearchResult object to fill in:
+  my $hit = shift;
+  # Delete some useless stuff:
+  my $oSPAN = $oLI->look_down(_tag => 'span',
+                              class => 'fc');
+  if (ref $oSPAN)
+    {
+    print STDERR " DDD Y::C deleting fc span\n" if (2 <= $self->{_debug});
+    $oSPAN->detach;
+    $oSPAN->delete;
+    } # if
+  # Grab the size & date:
+  my $oDIV = $oLI->look_down(_tag => 'div',
+                             class => 'rel');
+  if (ref $oDIV)
+    {
+    my $sDIV = $oDIV->as_text;
+    $sDIV =~ s!\240! !g;
+    print STDERR " DDD Y::C found rel div =$sDIV=\n" if (2 <= $self->{_debug});
+    if ($sDIV =~ m! - ([0-9KM]+) - !)
+      {
+      $hit->size($1);
+      } # if
+    if ($sDIV =~ m! - ([0-9/]+) - !)
+      {
+      $hit->change_date($1);
+      } # if
+    $oDIV->detach;  $oDIV->delete;
+    } # if
+  my $oTR = $oLI->look_down(_tag => 'td',
+                            class => 'd');
+  if (ref $oTR)
+    {
+    $hit->description($oTR->as_text);
+    } # if
+  } # parse_details
 
 1;
 

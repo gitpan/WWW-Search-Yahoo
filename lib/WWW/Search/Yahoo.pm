@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 2.364 2006/05/01 03:07:45 Daddy Exp $
+# $Id: Yahoo.pm,v 2.366 2007/04/07 17:19:10 Daddy Exp $
 
 =head1 NAME
 
@@ -114,7 +114,7 @@ use vars qw( $VERSION $MAINTAINER @ISA );
 use vars qw( $iMustPause );
 
 @ISA = qw( WWW::Search );
-$VERSION = do { my @r = (q$Revision: 2.364 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.366 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 # Thanks to the hard work of Gil Vidals and his team at
@@ -215,7 +215,7 @@ sub user_agent_delay
   {
   my $self = shift;
   my $iSecs = int(30 + rand(30));
-  print STDERR " + sleeping $iSecs seconds, to make yahoo.com think we're NOT a robot...\n" if ($self->{search_debug} < 0);
+  print STDERR " + sleeping $iSecs seconds, to make yahoo.com think we're NOT a robot...\n" if (0 < $self->{_debug});
   sleep($iSecs);
   } # user_agent_delay
 
@@ -283,49 +283,27 @@ sub parse_tree
     {
     # Sanity check:
     next LI_TAG unless ref($oLI);
+    print STDERR " DDD found oLI is ==", $oLI->as_HTML, "==\n" if (2 <= $self->{_debug});
     my @aoA = $oLI->look_down(_tag => 'a');
     my $oA = shift @aoA;
     next LI_TAG unless ref($oA);
+    print STDERR " DDD   found oA is ==", $oA->as_HTML, "==\n" if (2 <= $self->{_debug});
     my $sTitle = $oA->as_text || '';
     my $sURL = $oA->attr('href') || '';
     next LI_TAG unless ($sURL ne '');
     print STDERR " +   raw     URL is ==$sURL==\n" if (2 <= $self->{_debug});
-    # Throw out Yahoo category links that pop up on a failed query:
-    next LI_TAG if ($sURL =~ m!/search3/empty/catlink/!);
-    # Throw out Yahoo suggested further-search:
-    next LI_TAG if ($sURL =~ m!search.yahoo.com/search!);
-    unshift @aoA, $oA;
+    # Throw out various unwanted Yahoo links:
+    next LI_TAG if ($sURL =~ m!\.yahoo\.com/(about|jobseeker|preferences|search)/!);
+    next LI_TAG if ($sURL =~ m!//((de|cn|answers|help|search(marketing)?)\.)+yahoo\.com!);
     # Strip off the yahoo.com redirect part of the URL:
     $sURL =~ s!\A.*?\*-!!;
     $sURL =~ s!\Ahttp%3A!http:!i;
     print STDERR " +   cooked  URL is ==$sURL==\n" if (2 <= $self->{_debug});
-    # Delete the useless human-readable restatement of the URL (first
-    # <EM> tag we come across):
-    my $oEM = $oLI->look_down(_tag => 'em');
-    if (ref($oEM))
-      {
-      $oEM->detach;
-      $oEM->delete;
-      } # if
- A_TAG:
-    foreach my $oA (@aoA)
-      {
-      $oA->detach;
-      $oA->delete;
-      } # foreach A_TAG
-    my $sDesc = $oLI->as_text;
-    print STDERR " +   raw     sDesc is ==$sDesc==\n" if (2 <= $self->{_debug});
-    # Grab stuff off the end of the description:
-    my $sSize = $1 if ($sDesc =~ s!\s+(-\s+)+(\d+k?)(\s+-)+\s+\Z!!);
-    $sSize ||= '';
-    print STDERR " +   cooked  sDesc is ==$sDesc==\n" if (2 <= $self->{_debug});
     my $hit = new WWW::SearchResult;
+    $self->parse_details($oLI, $hit);
     $hit->add_url($sURL);
     $sTitle = $self->strip($sTitle);
-    $sDesc = $self->strip($sDesc);
     $hit->title($sTitle);
-    $hit->description($sDesc);
-    $hit->size($sSize);
     push(@{$self->{cache}}, $hit);
     $hits_found++;
     } # foreach LI_TAG
@@ -355,6 +333,45 @@ sub parse_tree
     } # foreach NEXT_A
   return $hits_found;
   } # parse_tree
+
+sub parse_details
+  {
+  my $self = shift;
+  # Required arg1 = (part of) an HTML parse tree:
+  my $oLI = shift;
+  # Required arg2 = a WWW::SearchResult object to fill in:
+  my $hit = shift;
+  # Delete the useless human-readable restatement of the URL (first
+  # <EM> tag we come across):
+  my $oEM = $oLI->look_down(_tag => 'em');
+  if (ref($oEM))
+    {
+    $oEM->detach;
+    $oEM->delete;
+    } # if
+  # Delete any remaining <A> tags:
+  my @aoA = $oLI->look_down(_tag => 'a');
+ A_TAG:
+  foreach my $oA (@aoA)
+    {
+    $oA->detach;
+    $oA->delete;
+    } # foreach A_TAG
+  my $oDIV = $oLI->look_down(_tag => 'div');
+  if (ref $oDIV)
+    {
+    $oDIV->detach;
+    $oDIV->delete;
+    } # if
+  my $sDesc = $oLI->as_text;
+  print STDERR " +   raw     sDesc is ==$sDesc==\n" if (2 <= $self->{_debug});
+  # Grab stuff off the end of the description:
+  my $sSize = $1 if ($sDesc =~ s!\s+(-\s+)+(\d+k?)(\s+-)+\s+\Z!!);
+  $sSize ||= '';
+  $hit->size($sSize);
+  print STDERR " +   cooked  sDesc is ==$sDesc==\n" if (2 <= $self->{_debug});
+  $hit->description($self->strip($sDesc));
+  } # parse_details
 
 sub _where_to_find_count
   {

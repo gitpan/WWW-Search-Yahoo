@@ -1,5 +1,11 @@
+
+# $Id$
+
+use strict;
+use warnings;
+
 use ExtUtils::testlib;
-use Test::More no_plan;
+use Test::More 'no_plan';
 
 BEGIN { use_ok('WWW::Search') };
 BEGIN { use_ok('WWW::Search::Test') };
@@ -16,7 +22,7 @@ my $iDump = 0;
 # This test returns no results (but we should not get an HTTP error):
 diag("Sending 0-page query to de.yahoo.com...");
 $iDebug = 0;
-$iDump = 0;
+$iDump = 1;
 &tm_run_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug, $iDump);
 # goto MULTI_TEST;
 TEST_NOW:
@@ -26,16 +32,18 @@ $iDump = 0;
 diag("Sending 1-page query to de.yahoo.com...");
 &tm_run_test('normal', 'wiz'.'ardrry', 1, 99, $iDebug, $iDump);
 my @ao = $WWW::Search::Test::oSearch->results();
-cmp_ok(0, '<', scalar(@ao), 'got any results');
+my $iCount = scalar(@ao);
+cmp_ok(0, '<', $iCount, 'got any results');
+my $iCountDesc = 0;
 foreach my $oResult (@ao)
   {
   like($oResult->url, qr{\Ahttp://},
        'result URL is http');
   cmp_ok($oResult->title, 'ne', '',
          'result Title is not empty');
-  cmp_ok($oResult->description, 'ne', '',
-         'result description is not empty');
+  $iCountDesc++ if ($oResult->description ne '');
   } # foreach
+cmp_ok(0.95, '<', $iCountDesc/$iCount, 'mostly non-empty descriptions');
 # goto ALL_DONE;
 
 MULTI_TEST:

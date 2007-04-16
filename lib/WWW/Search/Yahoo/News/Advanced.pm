@@ -1,5 +1,5 @@
 
-# $Id: Advanced.pm,v 2.56 2006/05/01 19:16:33 Daddy Exp $
+# $Id: Advanced.pm,v 2.57 2007/04/14 18:14:50 Daddy Exp $
 
 =head1 NAME
 
@@ -77,7 +77,7 @@ use WWW::Search::Yahoo;
 use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
-$VERSION = do { my @r = (q$Revision: 2.56 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.57 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub native_setup_search
@@ -145,7 +145,7 @@ sub parse_tree
   my $tree = shift;
   my $hits_found = 0;
   my @aoFONTcount = $tree->look_down('_tag', 'div',
-                                     'class' => 'yschhd',
+                                     'class' => 'hd',
                                     );
  FONTcount_TAG:
   foreach my $oFONT (@aoFONTcount)
@@ -153,7 +153,7 @@ sub parse_tree
     my $s = $oFONT->as_text;
     print STDERR " + FONTcount == ", $oFONT->as_HTML if 2 <= $self->{_debug};
     # print STDERR " +   TEXT == ", $s, "\n" if 2 <= $self->{_debug};
-    if ($s =~ m!\d+\s*-\s*\d+\s+of\s+(?:about\s+)?([0-9,]+)!)
+    if ($s =~ m!Results\s+\d+\s*-\s*\d+\s+of\s+(?:about\s+)?([0-9,]+)!)
       {
       my $iCount = $1;
       $iCount =~ s!,!!g;
@@ -179,18 +179,19 @@ A_TAG:
     my $sTitle = $oA->as_text;
     print STDERR " +   TITLE == $sTitle\n" if 2 <= $self->{_debug};
     # In order to make it easier to parse, make sure everything is an object!
-    my $oLI = $oA->parent;
+    my $oLI = $oA->look_up(_tag => 'li');
     next A_TAG unless ref($oLI);
     $oA->detach;
     $oA->delete;
-    my $oEM = $oLI->look_down('_tag' => 'em');
+    my $oEM = $oLI->look_down('_tag' => 'em',
+                             class => 'yschurl');
     next A_TAG unless ref($oEM);
     my $sEM = $oEM->as_text;
     my ($sSource, $sDate) = split(/[\s\240]-[\s\240]/, $sEM);
-    $oEM->detach;
-    $oEM->delete;
-    # The (remaining) text of the LI is the description:
-    my $sDesc = &strip_tags($oLI->as_text);
+    my $oDIV = $oLI->look_down(_tag => 'div',
+                               class => 'yschabstr');
+    next A_TAG unless ref($oDIV);
+    my $sDesc = &strip_tags($oDIV->as_text);
     print STDERR " +   raw DESC  == $sDesc\n" if 2 <= $self->{_debug};
     $sDesc =~ s!Save to My Web\Z!!;
     my $hit = new WWW::Search::Result;

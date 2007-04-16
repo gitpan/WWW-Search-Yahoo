@@ -7,7 +7,7 @@ BEGIN { use_ok('WWW::Search::Yahoo') };
 BEGIN { use_ok('WWW::Search::Yahoo::China') };
 
 &tm_new_engine('Yahoo::China');
-my $iDebug;
+my $iDebug = 0;
 my $iDump = 0;
 
 # goto TEST_NOW;
@@ -16,9 +16,9 @@ my $iDump = 0;
 # This test returns no results (but we should not get an HTTP error):
 diag("Sending 0-page query to cn.yahoo.com...");
 $iDebug = 0;
-$iDump = 0;
+$iDump = 1;
 &tm_run_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug, $iDump);
-# exit 99; # for testing
+# goto ALL_DONE; # for testing
 TEST_NOW:
 $iDebug = 0;
 $iDump = 0;
@@ -27,7 +27,9 @@ diag("Sending 1-page query to cn.yahoo.com...");
 TODO:
   {
   $TODO = q{I need a Chinese reader to implement the result-count regex};
-  &tm_run_test('normal', "\xE8\xAF\xB7\xE4\xB9\xA6\xE7\x9A\x84\xE5\x86\x99\xE6\xB3\x95",
+  &tm_run_test('normal',
+               # "\xE8\xAF\xB7\xE4\xB9\xA6\xE7\x9A\x84\xE5\x86\x99\xE6\xB3\x95",
+               'wiz'.'zardry',
                1, 99, $iDebug, $iDump, {ei => 'UTF-8'});
   $TODO = '';
   } # end of TODO block

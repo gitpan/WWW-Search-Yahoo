@@ -1,3 +1,15 @@
+2007-04-14    <Daddy@C-3PO>
+
+	* lib/WWW/Search/Yahoo/News/Advanced.pm (parse_tree): fixed for new page format
+
+2007-04-01    <Daddy@C-3PO>
+
+	* lib/WWW/Search/Yahoo/China.pm (_result_list_tags): fix for new results page format
+
+2007-03-28    <Daddy@C-3PO>
+
+	* lib/WWW/Search/Yahoo.pm (parse_tree): don't return Yahoo links
+
 2006-05-01    <Daddy@C-3PO>
 
 	* lib/WWW/Search/Yahoo/China.pm (_result_list_tags): FIX for returning yahoo links as results

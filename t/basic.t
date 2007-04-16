@@ -16,6 +16,7 @@ diag("Sending 0-page query to yahoo.com...");
 $iDebug = 0;
 $iDump = 0;
 &tm_run_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug, $iDump);
+# goto THATS_ALL;
 TEST_NOW:
 $iDebug = 0;
 $iDump = 0;
@@ -37,12 +38,14 @@ SKIP:
     } # foreach
   cmp_ok(0.95, '<', $iCountDesc/$iCount, 'mostly non-empty descriptions');
   } # SKIP
+# goto THATS_ALL;
 MULTI_TEST:
 diag("Sending multi-page query to yahoo.com...");
 $iDebug = 0;
 $iDump = 0;
 # This query returns MANY pages of results:
 &tm_run_test('normal', 'pok'.'emon', 101, undef, $iDebug, $iDump);
+THATS_ALL:
 exit 0;
 
 __END__
