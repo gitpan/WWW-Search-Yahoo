@@ -1,5 +1,5 @@
 
-# $Id$
+# $Id: de.t,v 1.6 2007/04/16 12:05:51 Daddy Exp $
 
 use strict;
 use warnings;

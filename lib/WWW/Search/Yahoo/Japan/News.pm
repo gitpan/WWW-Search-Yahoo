@@ -1,4 +1,4 @@
-# $Id: News.pm,v 2.65 2006/05/01 23:57:31 Daddy Exp $
+# $Id: News.pm,v 2.66 2007/04/16 12:05:38 Daddy Exp $
 
 =head1 NAME
 
@@ -78,7 +78,7 @@ use strict;
 use base 'WWW::Search::Yahoo';
 
 my
-$VERSION = do { my @r = (q$Revision: 2.65 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.66 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 my $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 use Data::Dumper; # for debugging only

@@ -1,6 +1,6 @@
 # China.pm
 # by Martin Thurn
-# $Id: China.pm,v 2.8 2007/04/02 00:28:09 Daddy Exp $
+# $Id: China.pm,v 2.9 2007/04/16 12:05:09 Daddy Exp $
 
 =head1 NAME
 
@@ -65,7 +65,7 @@ use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
 
-$VERSION = do { my @r = (q$Revision: 2.8 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.9 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub native_setup_search

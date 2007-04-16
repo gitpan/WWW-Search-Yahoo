@@ -1,3 +1,11 @@
+2007-04-16    <Daddy@C-3PO>
+
+	* lib/WWW/Search/Yahoo/Japan/News.pm (parse_tree): fixed for new page format
+
+	* lib/WWW/Search/Yahoo/China.pm (parse_details): fixed for new page format
+
+	* lib/WWW/Search/Yahoo.pm (parse_details): new sub-class-able method
+
 2007-04-14    <Daddy@C-3PO>
 
 	* lib/WWW/Search/Yahoo/News/Advanced.pm (parse_tree): fixed for new page format

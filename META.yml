@@ -24,4 +24,4 @@ requires:
   URI::Escape: 0
   WWW::Search: 2.523
   perl: 5.004
-version: 2.407
+version: 2.408
