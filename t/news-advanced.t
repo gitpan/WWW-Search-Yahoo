@@ -1,5 +1,5 @@
 
-# $Id: news-advanced.t,v 1.18 2007/04/14 18:14:29 Daddy Exp $
+# $Id: news-advanced.t,v 1.19 2007/04/21 17:10:14 Daddy Exp $
 
 use ExtUtils::testlib;
 use Test::More no_plan;
@@ -25,7 +25,7 @@ $iDebug = 0;
 $iDump = 0;
 &tm_run_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug);
 
-DEBUG_NOW:
+# DEBUG_NOW:
 diag("Sending 1-page query to news.yahoo.com...");
 $iDebug = 0;
 $iDump = 0;
@@ -39,16 +39,17 @@ $iDump = 0;
 &tm_run_test('normal', 'Japan', 51, undef, $iDebug, $iDump);
 goto ALL_DONE;
 
+DEBUG_NOW:
 ;
-TODO:
+# TODO:
   {
-  $TODO = qq{yahoo.com advanced search is often broken.};
-  $WWW::Search::Test::oSearch->date_from('2004-03-21');
-  $WWW::Search::Test::oSearch->date_to  ('2004-03-30');
+  # $TODO = qq{yahoo.com advanced search is often broken.};
+  $WWW::Search::Test::oSearch->date_from('5 days ago');
+  $WWW::Search::Test::oSearch->date_to  ('today');
   $iDebug = 0;
   $iDump = 0;
-  &tm_run_test('normal', 'Aomori', 1, 9, $iDebug, $iDump);
-  $TODO = '';
+  &tm_run_test('normal', 'Aomori', 1, 20, $iDebug, $iDump);
+  # $TODO = '';
   } # end of TODO block
 SKIP_REST:
 ;

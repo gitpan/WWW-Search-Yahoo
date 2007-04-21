@@ -29,3 +29,4 @@ t/echostar_i_c.t
 t/gui.t
 t/japan-news.t
 t/news-advanced.t
+t/pod.t

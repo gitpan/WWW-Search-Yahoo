@@ -1,3 +1,7 @@
+2007-04-21    <Daddy@C-3PO>
+
+	* lib/WWW/Search/Yahoo/News/Advanced.pm (native_setup_search): overhauled for new Yahoo web page format
+
 2007-04-16    <Daddy@C-3PO>
 
 	* lib/WWW/Search/Yahoo/Japan/News.pm (parse_tree): fixed for new page format
