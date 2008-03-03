@@ -1,5 +1,5 @@
 
-# $Id: de.t,v 1.6 2007/04/16 12:05:51 Daddy Exp $
+# $Id: de.t,v 1.8 2008/03/02 19:14:27 Daddy Exp $
 
 use strict;
 use warnings;
@@ -22,7 +22,7 @@ my $iDump = 0;
 # This test returns no results (but we should not get an HTTP error):
 diag("Sending 0-page query to de.yahoo.com...");
 $iDebug = 0;
-$iDump = 1;
+$iDump = 0;
 &tm_run_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug, $iDump);
 # goto MULTI_TEST;
 TEST_NOW:
@@ -37,11 +37,11 @@ cmp_ok(0, '<', $iCount, 'got any results');
 my $iCountDesc = 0;
 foreach my $oResult (@ao)
   {
-  like($oResult->url, qr{\Ahttp://},
+  like($oResult->url, qr{\Ahttps?://},
        'result URL is http');
-  cmp_ok($oResult->title, 'ne', '',
+  cmp_ok($oResult->title, 'ne', q{},
          'result Title is not empty');
-  $iCountDesc++ if ($oResult->description ne '');
+  $iCountDesc++ if ($oResult->description ne q{});
   } # foreach
 cmp_ok(0.95, '<', $iCountDesc/$iCount, 'mostly non-empty descriptions');
 # goto ALL_DONE;

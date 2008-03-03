@@ -1,4 +1,4 @@
-# $Id: Korea.pm,v 2.32 2006/05/01 23:56:37 Daddy Exp $
+# $Id: Korea.pm,v 2.33 2008/03/03 03:35:04 Daddy Exp $
 
 =head1 NAME
 
@@ -53,14 +53,16 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 package WWW::Search::Yahoo::Korea;
 
+use strict;
+use warnings;
+
 use Data::Dumper;  # for debugging only
 use WWW::Search::Yahoo;
 
-use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
 
-$VERSION = do { my @r = (q$Revision: 2.32 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.33 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub native_setup_search

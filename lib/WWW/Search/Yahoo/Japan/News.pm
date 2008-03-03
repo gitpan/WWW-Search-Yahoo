@@ -1,4 +1,4 @@
-# $Id: News.pm,v 2.66 2007/04/16 12:05:38 Daddy Exp $
+# $Id: News.pm,v 2.67 2008/03/03 03:35:04 Daddy Exp $
 
 =head1 NAME
 
@@ -74,11 +74,12 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 package WWW::Search::Yahoo::Japan::News;
 
 use strict;
+use warnings;
 
 use base 'WWW::Search::Yahoo';
 
 my
-$VERSION = do { my @r = (q$Revision: 2.66 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.67 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 my $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 use Data::Dumper; # for debugging only

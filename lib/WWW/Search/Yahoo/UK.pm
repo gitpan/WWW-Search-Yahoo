@@ -1,6 +1,6 @@
 # UK.pm
 # by Martin Thurn
-# $Id: UK.pm,v 1.7 2006/05/01 23:56:58 Daddy Exp $
+# $Id: UK.pm,v 1.8 2008/03/03 03:35:04 Daddy Exp $
 
 =head1 NAME
 
@@ -55,14 +55,16 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 package WWW::Search::Yahoo::UK;
 
+use strict;
+use warnings;
+
 use Data::Dumper;  # for debugging only
 use WWW::Search::Yahoo;
 
-use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
 
-$VERSION = '2.01';
+$VERSION = '2.021';
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub native_setup_search

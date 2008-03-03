@@ -31,7 +31,7 @@ SKIP:
   skip 'got no results' unless cmp_ok(0, '<', $iCount, 'got any results');
   foreach my $oResult (@ao)
     {
-    like($oResult->url, qr{\Ahttp://}, 'result URL is http');
+    like($oResult->url, qr{\Ahttps?://}, 'result URL is http');
     cmp_ok($oResult->title, 'ne', '', 'result Title is not empty');
     # cmp_ok($oResult->size, 'ne', '', 'result size is not empty');
     $iCountDesc++ if ($oResult->description ne '');

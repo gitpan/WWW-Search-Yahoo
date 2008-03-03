@@ -1,6 +1,6 @@
 # China.pm
 # by Martin Thurn
-# $Id: China.pm,v 2.9 2007/04/16 12:05:09 Daddy Exp $
+# $Id: China.pm,v 2.10 2008/03/03 03:35:04 Daddy Exp $
 
 =head1 NAME
 
@@ -58,14 +58,16 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 package WWW::Search::Yahoo::China;
 
+use strict;
+use warnings;
+
 use Data::Dumper;  # for debugging only
 use WWW::Search::Yahoo;
 
-use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
 
-$VERSION = do { my @r = (q$Revision: 2.9 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.10 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub native_setup_search

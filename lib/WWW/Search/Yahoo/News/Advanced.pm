@@ -1,5 +1,5 @@
 
-# $Id: Advanced.pm,v 2.58 2007/04/21 17:09:49 Daddy Exp $
+# $Id: Advanced.pm,v 2.59 2008/03/03 03:35:04 Daddy Exp $
 
 =head1 NAME
 
@@ -63,16 +63,18 @@ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 package WWW::Search::Yahoo::News::Advanced;
 
+use strict;
+use warnings;
+
 use Data::Dumper;  # for debugging only
 use Date::Manip;
 use WWW::Search qw( strip_tags );
 use WWW::Search::Result;
 use WWW::Search::Yahoo;
 
-use strict;
 use vars qw( @ISA $VERSION $MAINTAINER );
 @ISA = qw( WWW::Search::Yahoo );
-$VERSION = do { my @r = (q$Revision: 2.58 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.59 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub native_setup_search

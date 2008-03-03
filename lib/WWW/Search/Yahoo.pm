@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 2.367 2007/04/16 12:04:24 Daddy Exp $
+# $Id: Yahoo.pm,v 2.370 2008/03/03 03:35:03 Daddy Exp $
 
 =head1 NAME
 
@@ -100,6 +100,9 @@ Updated test cases.
 
 package WWW::Search::Yahoo;
 
+use strict;
+use warnings;
+
 use Carp ();
 use Data::Dumper;  # for debugging only
 use HTML::TreeBuilder;
@@ -109,12 +112,11 @@ use WWW::SearchResult;
 use URI;
 use URI::Escape;
 
-use strict;
 use vars qw( $VERSION $MAINTAINER @ISA );
 use vars qw( $iMustPause );
 
 @ISA = qw( WWW::Search );
-$VERSION = do { my @r = (q$Revision: 2.367 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.370 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 # Thanks to the hard work of Gil Vidals and his team at
@@ -239,7 +241,9 @@ sub preprocess_results_page
 
 sub _result_list_tags
   {
-  return (_tag => 'li');
+  return (_tag => 'div',
+          class => 'res',
+         );
   } # _result_list_tags
 
 my $WS = q{[\t\r\n\240\ ]};
@@ -300,6 +304,7 @@ sub parse_tree
     $sURL =~ s!\Ahttp%3A!http:!i;
     print STDERR " +   cooked  URL is ==$sURL==\n" if (2 <= $self->{_debug});
     my $hit = new WWW::SearchResult;
+    $hit->description(q{});
     $self->parse_details($oLI, $hit);
     $hit->add_url($sURL);
     $sTitle = $self->strip($sTitle);
@@ -341,14 +346,24 @@ sub parse_details
   my $oLI = shift;
   # Required arg2 = a WWW::SearchResult object to fill in:
   my $hit = shift;
+  my $oDIV = $oLI->look_down(_tag => 'div',
+                             class => 'abstr',
+                            );
+  if (ref($oDIV))
+    {
+    my $sDesc = $oDIV->as_text;
+    $hit->description($self->strip($sDesc));
+    } # if
   # Delete the useless human-readable restatement of the URL (first
   # <EM> tag we come across):
   my $oEM = $oLI->look_down(_tag => 'em');
   if (ref($oEM))
     {
-    $oEM->detach;
-    $oEM->delete;
+    my $sSize = '';
+    $sSize = $1 if ($oLI->as_text =~ m!(\d+[kb]?)!gx);
+    $hit->size($sSize);
     } # if
+  return;
   # Delete any remaining <A> tags:
   my @aoA = $oLI->look_down(_tag => 'a');
  A_TAG:
@@ -357,7 +372,7 @@ sub parse_details
     $oA->detach;
     $oA->delete;
     } # foreach A_TAG
-  my $oDIV = $oLI->look_down(_tag => 'div');
+  $oDIV = $oLI->look_down(_tag => 'div');
   if (ref $oDIV)
     {
     $oDIV->detach;
@@ -366,9 +381,6 @@ sub parse_details
   my $sDesc = $oLI->as_text;
   print STDERR " +   raw     sDesc is ==$sDesc==\n" if (2 <= $self->{_debug});
   # Grab stuff off the end of the description:
-  my $sSize = $1 if ($sDesc =~ s!\s+(-\s+)+(\d+k?)(\s+-)+\s+\Z!!);
-  $sSize ||= '';
-  $hit->size($sSize);
   print STDERR " +   cooked  sDesc is ==$sDesc==\n" if (2 <= $self->{_debug});
   $hit->description($self->strip($sDesc));
   } # parse_details
@@ -378,7 +390,7 @@ sub _where_to_find_count
   my %hash = (
               _tag => 'div',
               # 'class' => 'ygbody',
-              id => 'yschinfo',
+              id => 'info',
              );
   return \%hash;
   } # _where_to_find_count
@@ -396,10 +408,12 @@ sub _a_is_next_link
   {
   my $self = shift;
   my $oA = shift;
-  return 0 unless (ref $oA);
+  return 0 if (! ref $oA);
+  my $sID = $oA->attr('id') || '';
+  return 1 if ($sID eq 'pg-next');
   my $s = $oA->as_text;
   print STDERR " +     next A as_text ==$s==\n" if (2 <= $self->{_debug});
-  return ($s =~ m!\A$WS*Next$WS*\Z!i);
+  return ($s =~ m!\A$WS*Next$WS+&gt;$WS*\z!i);
   } # _a_is_next_link
 
 sub strip
