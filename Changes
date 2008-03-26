@@ -1,3 +1,15 @@
+2008-03-26    <Martin@BLUEMAX>
+
+	* lib/WWW/Search/Yahoo/Japan/News.pm: removed to its own distribution
+
+2008-03-25    <Martin@BLUEMAX>
+
+	* lib/WWW/Search/Yahoo.pm (_result_list_items): new private method
+
+2008-03-23    <Martin@BLUEMAX>
+
+	* lib/WWW/Search/Yahoo/China.pm: removed to its own distribution
+
 2007-07-02    <Daddy@C-3PO>
 
 	* Yahoo/TV/Echostar.pm: removed because Yahoo does not provide TV listings search any more

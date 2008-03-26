@@ -1,7 +1,7 @@
 # Yahoo.pm
 # by Martin Thurn
 # Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 2.370 2008/03/03 03:35:03 Daddy Exp $
+# $Id: Yahoo.pm,v 2.372 2008/03/26 03:13:36 Martin Exp $
 
 =head1 NAME
 
@@ -106,18 +106,17 @@ use warnings;
 use Carp ();
 use Data::Dumper;  # for debugging only
 use HTML::TreeBuilder;
-# We must have version 
 use WWW::Search;
 use WWW::SearchResult;
 use URI;
 use URI::Escape;
 
-use vars qw( $VERSION $MAINTAINER @ISA );
 use vars qw( $iMustPause );
 
-@ISA = qw( WWW::Search );
-$VERSION = do { my @r = (q$Revision: 2.370 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
-$MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
+use base 'WWW::Search';
+our
+$VERSION = do { my @r = (q$Revision: 2.372 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+our $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 # Thanks to the hard work of Gil Vidals and his team at
 # positionresearch.com, we know the following: In early 2004,
@@ -246,6 +245,14 @@ sub _result_list_tags
          );
   } # _result_list_tags
 
+sub _result_list_items
+  {
+  my $self = shift;
+  my $oTree = shift || die;
+  my @ao = $oTree->look_down($self->_result_list_tags);
+  return @ao;
+  } # _result_list_items
+
 my $WS = q{[\t\r\n\240\ ]};
 
 sub parse_tree
@@ -281,7 +288,7 @@ sub parse_tree
     } # if
   print STDERR " + found approx_h_c is ==", $self->approximate_hit_count(), "==\n" if (2 <= $self->{_debug});
 
-  my @aoLI = $oTree->look_down($self->_result_list_tags);
+  my @aoLI = $self->_result_list_items($oTree);
  LI_TAG:
   foreach my $oLI (@aoLI)
     {
@@ -294,11 +301,11 @@ sub parse_tree
     print STDERR " DDD   found oA is ==", $oA->as_HTML, "==\n" if (2 <= $self->{_debug});
     my $sTitle = $oA->as_text || '';
     my $sURL = $oA->attr('href') || '';
-    next LI_TAG unless ($sURL ne '');
+    next LI_TAG if ($sURL eq '');
     print STDERR " +   raw     URL is ==$sURL==\n" if (2 <= $self->{_debug});
     # Throw out various unwanted Yahoo links:
     next LI_TAG if ($sURL =~ m!\.yahoo\.com/(about|jobseeker|preferences|search)/!);
-    next LI_TAG if ($sURL =~ m!//((de|cn|answers|help|search(marketing)?)\.)+yahoo\.com!);
+    next LI_TAG if ($sURL =~ m!//((answers|cgi|cn|de|docs|europe|help|local|myweb\d?|search|searchmarketing|video)\.)+yahoo\.com!);
     # Strip off the yahoo.com redirect part of the URL:
     $sURL =~ s!\A.*?\*-!!;
     $sURL =~ s!\Ahttp%3A!http:!i;
