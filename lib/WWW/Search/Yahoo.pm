@@ -1,7 +1,5 @@
-# Yahoo.pm
-# by Martin Thurn
-# Copyright (C) 1996-1998 by USC/ISI
-# $Id: Yahoo.pm,v 2.372 2008/03/26 03:13:36 Martin Exp $
+
+# $Id: Yahoo.pm,v 2.377 2008/04/11 21:41:53 Martin Exp $
 
 =head1 NAME
 
@@ -28,75 +26,17 @@ be done through L<WWW::Search> objects.
 
 The default search is: Yahoo's web-based index (not Directory).
 
-=head1 SEE ALSO
+=head1 PRIVATE METHODS
 
-To make new back-ends, see L<WWW::Search>.
+If you just want to write Perl code to search Yahoo,
+you do NOT need to read any further here.
+Instead, just read the L<WWW::Search> documentation.
 
-=head1 BUGS
-
-Please tell the maintainer if you find any!
-
-=head1 AUTHOR
-
-As of 1998-02-02, C<WWW::Search::Yahoo> is maintained by Martin Thurn
-(mthurn@cpan.org).
-
-C<WWW::Search::Yahoo> was originally written by Wm. L. Scheding,
-based on C<WWW::Search::AltaVista>.
-
-=head1 LEGALESE
-
-THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
-WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-
-=head1 VERSION HISTORY
-
-See ChangeLog for all changes since version 2.07
-
-=head2 2.07, 2000-02-04
-
-Added gui_query() function
-
-=head2 2.06, 1999-11-22
-
-Added support for Yahoo Korea.
-
-=head2 2.04, 1999-10-11
-
-fixed parser
-
-=head2 2.03, 1999-10-05
-
-now uses hash_to_cgi_string()
-
-=head2 2.02, 1999-09-29
-
-update test cases; add caveat about repeated URLs
-
-=head2 2.01, 1999-07-13
-
-version number alignment with new WWW::Search;
-new test mechanism
-
-=head2 1.12, 1998-10-22
-
-BUG FIX: now captures citation descriptions;
-BUG FIX: next page of results was often wrong or missing!
-
-=head2 1.11, 1998-10-09
-
-Now uses split_lines function
-
-=head2 1.5
-
-Fixed bug where next page tag was always missed.
-Fixed the maximum_to_retrieve off-by-one problem.
-Updated test cases.
+If you want to write a subclass of this module
+(e.g. create a backend for another branch of Yahoo)
+then please read about the private methods here:
 
 =cut
-
-#####################################################################
 
 package WWW::Search::Yahoo;
 
@@ -115,7 +55,7 @@ use vars qw( $iMustPause );
 
 use base 'WWW::Search';
 our
-$VERSION = do { my @r = (q$Revision: 2.372 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.377 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 our $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 # Thanks to the hard work of Gil Vidals and his team at
@@ -128,12 +68,11 @@ our $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 # this purpose:
 $iMustPause = 0;
 
-sub need_to_delay
-  {
-  # print STDERR " + this is Yahoo::need_to_delay()\n";
-  return $iMustPause;
-  } # need_to_delay
+=head2 gui_query
 
+Yes, Virginia, we do try to emulate stupid-human queries.
+
+=cut
 
 sub gui_query
   {
@@ -150,8 +89,7 @@ sub gui_query
   return $self->native_query($sQuery, $rh);
   } # gui_query
 
-
-sub native_setup_search
+sub _native_setup_search
   {
   my ($self, $native_query, $rhOptsArg) = @_;
   # print STDERR " +     This is Yahoo::native_setup_search()...\n";
@@ -209,8 +147,28 @@ sub native_setup_search
 
   $self->{_debug} = $self->{'search_debug'} || 0;
   $self->{_debug} = 2 if ($self->{'search_parse_debug'});
-  } # native_setup_search
+  } # _native_setup_search
 
+
+=head2 need_to_delay
+
+This method tells the L<WWW::Search> controller code whether we need to
+pause and give the yahoo.com servers a breather.
+
+=cut
+
+sub need_to_delay
+  {
+  # print STDERR " + this is Yahoo::need_to_delay()\n";
+  return $iMustPause;
+  } # need_to_delay
+
+
+=head2 user_agent_delay
+
+This method tells the L<WWW::Search> controller code how many seconds we should pause.
+
+=cut
 
 sub user_agent_delay
   {
@@ -220,6 +178,12 @@ sub user_agent_delay
   sleep($iSecs);
   } # user_agent_delay
 
+
+=head2 preprocess_results_page
+
+Clean up the Yahoo HTML before we attempt to parse it.
+
+=cut
 
 sub preprocess_results_page
   {
@@ -238,12 +202,29 @@ sub preprocess_results_page
   } # preprocess_results_page
 
 
+=head2 _result_list_tags
+
+Returns a list,
+which will be passed as arguments to HTML::Element::look_down()
+in order to return a list of HTML::Element which contain the query results.
+
+=cut
+
 sub _result_list_tags
   {
   return (_tag => 'div',
           class => 'res',
          );
   } # _result_list_tags
+
+
+=head2 _result_list_items
+
+Given an HTML::TreeBuilder tree,
+returns a list of HTML::Element,
+which contain the query results.
+
+=cut
 
 sub _result_list_items
   {
@@ -255,7 +236,7 @@ sub _result_list_items
 
 my $WS = q{[\t\r\n\240\ ]};
 
-sub parse_tree
+sub _parse_tree
   {
   my $self = shift;
   my $oTree = shift;
@@ -344,7 +325,16 @@ sub parse_tree
       } # if
     } # foreach NEXT_A
   return $hits_found;
-  } # parse_tree
+  } # _parse_tree
+
+
+=head2 parse_details
+
+Given a (portion of an) HTML::TreeBuilder tree
+and a L<WWW::SearchResult> object,
+parses one result out of the tree and populates the SearchResult.
+
+=cut
 
 sub parse_details
   {
@@ -392,6 +382,16 @@ sub parse_details
   $hit->description($self->strip($sDesc));
   } # parse_details
 
+
+=head2 _where_to_find_count
+
+Returns a list,
+which will be passed as arguments to HTML::Element::look_down()
+in order to return an HTML::Element
+which contains the approximate result count.
+
+=cut
+
 sub _where_to_find_count
   {
   my %hash = (
@@ -402,6 +402,15 @@ sub _where_to_find_count
   return \%hash;
   } # _where_to_find_count
 
+
+=head2 _string_has_count
+
+Given a string,
+returns the approximate result count
+if that string contains the approximate result count.
+
+=cut
+
 sub _string_has_count
   {
   my $self = shift;
@@ -410,6 +419,14 @@ sub _string_has_count
   return $1 if ($s =~ m!\bof\s+(?:about\s+)?([,0-9]+)!i);
   return -1;
   } # _string_has_count
+
+
+=head2 _a_is_next_link
+
+Given an HTML::Element,
+returns true if it seems to contain the clickable "next page" widget.
+
+=cut
 
 sub _a_is_next_link
   {
@@ -422,6 +439,14 @@ sub _a_is_next_link
   print STDERR " +     next A as_text ==$s==\n" if (2 <= $self->{_debug});
   return ($s =~ m!\A$WS*Next$WS+&gt;$WS*\z!i);
   } # _a_is_next_link
+
+
+=head2 strip
+
+Given a string,
+strips leading and trailing whitespace off of it.
+
+=cut
 
 sub strip
   {
@@ -452,3 +477,27 @@ _next_url :
 http://google.yahoo.com/bin/query?%0Ap=%22Shelagh+Fraser%22&b=21&hc=0&hs=0&xargs=
 
 http://rds.yahoo.com/_ylt=A0Je5ra.FlVEwsQA1RhXNyoA/SIG=13517q7d2/EXP=1146513470/**http%3a//search.yahoo.com/search%3fn=100%26vo=pokemon%26ei=UTF-8%26pstart=1%26b=101
+
+=head1 SEE ALSO
+
+To make new back-ends, see L<WWW::Search>.
+
+=head1 BUGS
+
+Please tell the maintainer if you find any!
+
+=head1 AUTHOR
+
+As of 1998-02-02, C<WWW::Search::Yahoo> is maintained by Martin Thurn
+(mthurn@cpan.org).
+
+C<WWW::Search::Yahoo> was originally written by Wm. L. Scheding,
+based on C<WWW::Search::AltaVista>.
+
+=head1 LEGALESE
+
+THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
+WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+=cut

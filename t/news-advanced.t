@@ -1,5 +1,5 @@
 
-# $Id: news-advanced.t,v 1.19 2007/04/21 17:10:14 Daddy Exp $
+# $Id: news-advanced.t,v 1.20 2008/04/11 21:41:17 Martin Exp $
 
 use ExtUtils::testlib;
 use Test::More no_plan;
@@ -25,7 +25,7 @@ $iDebug = 0;
 $iDump = 0;
 &tm_run_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug);
 
-# DEBUG_NOW:
+DEBUG_NOW:
 diag("Sending 1-page query to news.yahoo.com...");
 $iDebug = 0;
 $iDump = 0;
@@ -39,8 +39,7 @@ $iDump = 0;
 &tm_run_test('normal', 'Japan', 51, undef, $iDebug, $iDump);
 goto ALL_DONE;
 
-DEBUG_NOW:
-;
+pass;
 # TODO:
   {
   # $TODO = qq{yahoo.com advanced search is often broken.};
@@ -52,8 +51,9 @@ DEBUG_NOW:
   # $TODO = '';
   } # end of TODO block
 SKIP_REST:
-;
+pass;
 ALL_DONE:
+pass;
 exit 0;
 
 __END__

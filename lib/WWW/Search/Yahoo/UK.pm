@@ -1,6 +1,6 @@
 # UK.pm
 # by Martin Thurn
-# $Id: UK.pm,v 1.8 2008/03/03 03:35:04 Daddy Exp $
+# $Id: UK.pm,v 1.9 2008/04/11 21:50:11 Martin Exp $
 
 =head1 NAME
 
@@ -58,28 +58,27 @@ package WWW::Search::Yahoo::UK;
 use strict;
 use warnings;
 
-use Data::Dumper;  # for debugging only
 use WWW::Search::Yahoo;
 
-use vars qw( @ISA $VERSION $MAINTAINER );
-@ISA = qw( WWW::Search::Yahoo );
+use base 'WWW::Search::Yahoo';
 
-$VERSION = '2.021';
-$MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
+our
+$VERSION = '2.022';
+our $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
-sub native_setup_search
+sub _native_setup_search
   {
   my ($self, $sQuery, $rh) = @_;
-  # print STDERR " +   in UK::native_setup_search, rh is ", Dumper($rh);
+  # print STDERR " +   in UK::_native_setup_search, rh is ", Dumper($rh);
   $self->{'_options'} = {
                          'p' => $sQuery,
                          'y' => 'uk',
                         };
   $rh->{'search_base_url'} = 'http://uk.search.yahoo.com';
   $rh->{'search_base_path'} = '/search/ukie';
-  # print STDERR " +   Yahoo::UK::native_setup_search() is calling SUPER::native_setup_search()...\n";
-  return $self->SUPER::native_setup_search($sQuery, $rh);
-  } # native_setup_search
+  # print STDERR " +   Yahoo::UK::_native_setup_search() is calling SUPER::_native_setup_search()...\n";
+  return $self->SUPER::_native_setup_search($sQuery, $rh);
+  } # _native_setup_search
 
 1;
 

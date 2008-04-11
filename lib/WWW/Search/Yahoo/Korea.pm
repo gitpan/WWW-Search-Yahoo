@@ -1,4 +1,4 @@
-# $Id: Korea.pm,v 2.33 2008/03/03 03:35:04 Daddy Exp $
+# $Id: Korea.pm,v 2.34 2008/04/11 21:49:19 Martin Exp $
 
 =head1 NAME
 
@@ -56,16 +56,14 @@ package WWW::Search::Yahoo::Korea;
 use strict;
 use warnings;
 
-use Data::Dumper;  # for debugging only
 use WWW::Search::Yahoo;
 
-use vars qw( @ISA $VERSION $MAINTAINER );
-@ISA = qw( WWW::Search::Yahoo );
+use base 'WWW::Search::Yahoo';
+our
+$VERSION = do { my @r = (q$Revision: 2.34 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+our $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
-$VERSION = do { my @r = (q$Revision: 2.33 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
-$MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
-
-sub native_setup_search
+sub _native_setup_search
   {
   my ($self, $sQuery, $rh) = @_;
   $self->{'_options'} = {
@@ -73,8 +71,8 @@ sub native_setup_search
                         };
   $rh->{'search_base_url'} = 'http://kr.search.yahoo.com';
   $rh->{'search_base_path'} = '/bin/search';
-  return $self->SUPER::native_setup_search($sQuery, $rh);
-  } # native_setup_search
+  return $self->SUPER::_native_setup_search($sQuery, $rh);
+  } # _native_setup_search
 
 1;
 

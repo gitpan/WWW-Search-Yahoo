@@ -1,5 +1,5 @@
 
-# $Id: Advanced.pm,v 2.59 2008/03/03 03:35:04 Daddy Exp $
+# $Id: Advanced.pm,v 2.60 2008/04/11 21:42:26 Martin Exp $
 
 =head1 NAME
 
@@ -72,15 +72,15 @@ use WWW::Search qw( strip_tags );
 use WWW::Search::Result;
 use WWW::Search::Yahoo;
 
-use vars qw( @ISA $VERSION $MAINTAINER );
-@ISA = qw( WWW::Search::Yahoo );
-$VERSION = do { my @r = (q$Revision: 2.59 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
-$MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
+use base 'WWW::Search::Yahoo';
+our
+$VERSION = do { my @r = (q$Revision: 2.60 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+our $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
-sub native_setup_search
+sub _native_setup_search
   {
   my ($self, $sQuery, $rh) = @_;
-  # print STDERR " +   in Y::N::A::native_setup_search, rh is ", Dumper($rh);
+  # print STDERR " +   in Y::N::A::_native_setup_search, rh is ", Dumper($rh);
   my $sDateFrom = $self->date_from || '';
   my $sDateTo = $self->date_to || '';
   my $iUseDate = 0;
@@ -138,12 +138,12 @@ sub native_setup_search
     } # if
   $rh->{'search_base_url'} = 'http://news.search.yahoo.com';
   $rh->{'search_base_path'} = '/search/news/';
-  # print STDERR " +   Y::N::A::native_setup_search() is calling SUPER::native_setup_search()...\n";
-  return $self->SUPER::native_setup_search($sQuery, $rh);
-  } # native_setup_search
+  # print STDERR " +   Y::N::A::_native_setup_search() is calling SUPER::_native_setup_search()...\n";
+  return $self->SUPER::_native_setup_search($sQuery, $rh);
+  } # _native_setup_search
 
 
-sub parse_tree
+sub _parse_tree
   {
   my $self = shift;
   my $tree = shift;
@@ -223,7 +223,7 @@ A_TAG:
     } # foreach $oA
   $tree->delete;
   return $hits_found;
-  } # parse_tree
+  } # _parse_tree
 
 
 1;
