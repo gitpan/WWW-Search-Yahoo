@@ -1,5 +1,5 @@
 
-# $Id: Yahoo.pm,v 2.377 2008/04/11 21:41:53 Martin Exp $
+# $Id: Yahoo.pm,v 2.379 2009/01/11 15:41:34 Martin Exp $
 
 =head1 NAME
 
@@ -55,7 +55,7 @@ use vars qw( $iMustPause );
 
 use base 'WWW::Search';
 our
-$VERSION = do { my @r = (q$Revision: 2.377 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.379 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 our $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 # Thanks to the hard work of Gil Vidals and his team at
@@ -270,14 +270,14 @@ sub _parse_tree
   print STDERR " + found approx_h_c is ==", $self->approximate_hit_count(), "==\n" if (2 <= $self->{_debug});
 
   my @aoLI = $self->_result_list_items($oTree);
+  print STDERR " DDD aoLI has ", scalar(@aoLI), " items...\n" if (2 <= $self->{_debug});
  LI_TAG:
   foreach my $oLI (@aoLI)
     {
     # Sanity check:
     next LI_TAG unless ref($oLI);
     print STDERR " DDD found oLI is ==", $oLI->as_HTML, "==\n" if (2 <= $self->{_debug});
-    my @aoA = $oLI->look_down(_tag => 'a');
-    my $oA = shift @aoA;
+    my $oA = $oLI->look_down(_tag => 'a');
     next LI_TAG unless ref($oA);
     print STDERR " DDD   found oA is ==", $oA->as_HTML, "==\n" if (2 <= $self->{_debug});
     my $sTitle = $oA->as_text || '';
@@ -499,5 +499,9 @@ based on C<WWW::Search::AltaVista>.
 THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
 WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+=head1 LICENSE
+
+This software is released under the same license as Perl itself.
 
 =cut

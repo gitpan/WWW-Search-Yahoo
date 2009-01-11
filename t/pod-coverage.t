@@ -1,5 +1,5 @@
 
-# $Id: pod-coverage.t,v 1.1 2008/04/06 03:55:31 Martin Exp $
+# $Id: pod-coverage.t,v 1.1 2009/01/11 15:54:24 Martin Exp $
 
 use strict;
 use warnings;
