@@ -1,6 +1,6 @@
 # UK.pm
 # by Martin Thurn
-# $Id: UK.pm,v 1.9 2008/04/11 21:50:11 Martin Exp $
+# $Id: UK.pm,v 1.10 2009/05/02 13:28:41 Martin Exp $
 
 =head1 NAME
 
@@ -44,6 +44,8 @@ C<WWW::Search::Yahoo> is maintained by Martin Thurn
 (mthurn@cpan.org).
 
 =head1 LEGALESE
+
+Copyright (C) 1998-2009 Martin 'Kingpin' Thurn
 
 THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
 WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF

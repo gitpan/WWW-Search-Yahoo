@@ -1,5 +1,5 @@
 
-# $Id: Yahoo.pm,v 2.379 2009/01/11 15:41:34 Martin Exp $
+# $Id: Yahoo.pm,v 2.380 2009/05/02 13:28:41 Martin Exp $
 
 =head1 NAME
 
@@ -55,7 +55,7 @@ use vars qw( $iMustPause );
 
 use base 'WWW::Search';
 our
-$VERSION = do { my @r = (q$Revision: 2.379 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.380 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 our $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 # Thanks to the hard work of Gil Vidals and his team at
@@ -501,6 +501,8 @@ WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 =head1 LICENSE
+
+Copyright (C) 1998-2009 Martin 'Kingpin' Thurn
 
 This software is released under the same license as Perl itself.
 

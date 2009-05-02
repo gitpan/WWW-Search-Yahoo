@@ -3,7 +3,7 @@ use inc::Module::Install;
 
 all_from('lib/WWW/Search/Yahoo.pm');
 
-version(2.414);
+version(2.415);
 
 requires( perl => '5.004' );
 requires('Data::Dumper');

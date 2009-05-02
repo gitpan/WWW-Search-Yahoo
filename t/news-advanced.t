@@ -1,21 +1,20 @@
 
-# $Id: news-advanced.t,v 1.20 2008/04/11 21:41:17 Martin Exp $
+# $Id: news-advanced.t,v 1.21 2009/05/02 17:02:30 Martin Exp $
 
 use ExtUtils::testlib;
 use Test::More no_plan;
 
-BEGIN { use_ok('Date::Manip') };
-BEGIN { use_ok('WWW::Search') };
-BEGIN { use_ok('WWW::Search::Test') };
-BEGIN { use_ok('WWW::Search::Yahoo') };
+use Date::Manip;
+use WWW::Search::Test;
+BEGIN { use_ok('WWW::Search::Yahoo::News::Advanced') };
 
-&Date_Init('TZ=US/Eastern');
+Date_Init('TZ=EST5EDT');
 
 my $iDebug = 0;
 my $iDump = 0;
 
 NEWS_ADVANCED_TEST:
-&tm_new_engine('Yahoo::News::Advanced');
+tm_new_engine('Yahoo::News::Advanced');
 
 # goto DEBUG_NOW;
 
@@ -23,20 +22,20 @@ NEWS_ADVANCED_TEST:
 diag("Sending 0-page query to news.yahoo.com...");
 $iDebug = 0;
 $iDump = 0;
-&tm_run_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug);
+tm_run_test('normal', $WWW::Search::Test::bogus_query, 0, 0, $iDebug);
 
 DEBUG_NOW:
 diag("Sending 1-page query to news.yahoo.com...");
 $iDebug = 0;
 $iDump = 0;
-&tm_run_test('normal', 'thurn', 1, 99, $iDebug, $iDump);
+tm_run_test('normal', 'thurn', 1, 99, $iDebug, $iDump);
 # goto ALL_DONE;
 
 # DEBUG_NOW:
 diag("Sending multi-page query to news.yahoo.com...");
 $iDebug = 0;
 $iDump = 0;
-&tm_run_test('normal', 'Japan', 51, undef, $iDebug, $iDump);
+tm_run_test('normal', 'Japan', 51, undef, $iDebug, $iDump);
 goto ALL_DONE;
 
 pass;
@@ -47,13 +46,13 @@ pass;
   $WWW::Search::Test::oSearch->date_to  ('today');
   $iDebug = 0;
   $iDump = 0;
-  &tm_run_test('normal', 'Aomori', 1, 20, $iDebug, $iDump);
+  tm_run_test('normal', 'Aomori', 1, 20, $iDebug, $iDump);
   # $TODO = '';
   } # end of TODO block
 SKIP_REST:
 pass;
 ALL_DONE:
-pass;
+pass('all done');
 exit 0;
 
 __END__

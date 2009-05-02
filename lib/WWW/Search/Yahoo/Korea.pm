@@ -1,4 +1,4 @@
-# $Id: Korea.pm,v 2.34 2008/04/11 21:49:19 Martin Exp $
+# $Id: Korea.pm,v 2.35 2009/05/02 13:28:41 Martin Exp $
 
 =head1 NAME
 
@@ -43,6 +43,8 @@ C<WWW::Search::Yahoo> is maintained by Martin Thurn
 
 =head1 LEGALESE
 
+Copyright (C) 1998-2009 Martin 'Kingpin' Thurn
+
 THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
 WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
@@ -60,7 +62,7 @@ use WWW::Search::Yahoo;
 
 use base 'WWW::Search::Yahoo';
 our
-$VERSION = do { my @r = (q$Revision: 2.34 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
+$VERSION = do { my @r = (q$Revision: 2.35 $ =~ /\d+/g); sprintf "%d."."%03d" x $#r, @r };
 our $MAINTAINER = 'Martin Thurn <mthurn@cpan.org>';
 
 sub _native_setup_search
